@@ -1,7 +1,7 @@
 #pragma once
 
 // MiniIot库文件版本
-#define MiniIot_VERSION "2504231806"
+#define MiniIot_VERSION "2506091057"
 
 #ifndef APP_VERSION
     #define APP_VERSION "0.0.1"
@@ -11,6 +11,10 @@
 
 =======2504231806=======
 -   发布版本：1.0.1
+
+=======2506091057=======
+-   发布版本：1.0.5
+-   新增：属性批量上报，但所有的key+value之和不能超过40个字符
 
 */
 

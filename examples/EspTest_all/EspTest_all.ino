@@ -1,7 +1,7 @@
 // 登录控制台与查看文档请访问官网：http://www.miniiot.top
 
 // 当前程序版本（仅用于后台展示）
-#define APP_VERSION "all_2504231612"
+#define APP_VERSION "all_2506091055"
 
 // 默认WIFI配置（出厂设置）
 #define DEFAULT_WIFI_SSID "Tenda_375160章"
@@ -59,6 +59,16 @@ void SysRstfun()
 }
 
 
+// 批量上报属性
+void test_1(){
+    // 所有的key+value之和不要超过40个字符，超过请分批上报
+    JSONVar myObject;
+    myObject["switch_1"] = "1";
+    myObject["switch_2"] = "2";
+    myObject["switch_3"] = (String)num;
+
+    MiniIot.propertyPost(myObject);
+}
 
 void addNum(){
     // 上报属性

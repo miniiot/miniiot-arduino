@@ -3,6 +3,7 @@
 #include <ArduinoJson.h>
 #include <LittleFS.h>
 #include <sstream>
+#include <Arduino_JSON.h>
 
 #include "Config.h"
 #include "Core/MiniIotUtils.h"
@@ -252,6 +253,38 @@ public:
 
         postData << "\"params\" : {";
         postData << "\"" << property_name.c_str() << "\" : {\"value\" : \"" << property_value.c_str() << "\"}";
+        postData << "}";
+        postData << "}";
+
+        MiniIotClient.propertyPost(postData.str().c_str());
+    }
+    
+    // 属性批量上报，所有的key+value之和不要超过40个字符
+    void propertyPost(JSONVar dataObj)
+    {
+        static std::stringstream postData;
+        postData.str("");
+        postData << "{";
+        postData << "\"id\" : \"" << MiniIotUtils::randomString(32).c_str() << "\", ";
+        postData << "\"version\" : \"1.0\", ";
+        postData << "\"method\" : \"property.post\", ";
+
+        postData << "\"sys\" : { \"ack\" : 0, ";
+        postData << "\"product\" : \"" << this->ProductId.c_str() << "\", ";
+        postData << "\"device\" : \"" << this->DeviceId.c_str() << "\"";
+        postData << " }, ";
+
+        postData << "\"params\" : {";
+
+        JSONVar keys = dataObj.keys();
+        for (int i = 0; i < keys.length(); i++) {
+            String value = dataObj[keys[i]];
+            postData << "\"" << ((String)keys[i]).c_str() << "\" : {\"value\" : \"" << ((String)value).c_str() << "\"}";
+            if(i!= keys.length() - 1) {
+                postData << ", ";
+            }
+        }
+
         postData << "}";
         postData << "}";
 
