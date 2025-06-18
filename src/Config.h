@@ -1,21 +1,23 @@
 #pragma once
 
 // MiniIot库文件版本
-#define MiniIot_VERSION "2506091057"
+#define MiniIot_VERSION "miniiot_v1.1.0_250616"
 
 #ifndef APP_VERSION
     #define APP_VERSION "0.0.1"
 #endif
 
 /*
+=======v1.0.1_250423=======
+-   发布版本：1.0.1。
 
-=======2504231806=======
--   发布版本：1.0.1
+=======v1.0.5_250609=======
+-   新增：属性批量上报，但所有的key+value之和不能超过40个字符。
 
-=======2506091057=======
--   发布版本：1.0.5
--   新增：属性批量上报，但所有的key+value之和不能超过40个字符
-
+=======v1.1.0_250616=======
+-   优化：优化wifi与mqtt连接逻辑，避免阻塞主线程。
+-   变更：wifi默认账号改为 miniiot.top
+-   变更：wifi默认密码改为 88888888
 */
 
 // MiniIot状态指示灯IO

@@ -1,0 +1,23 @@
+{
+    "files.associations": {
+        "*.embeddedhtml": "html",
+        "system_error": "cpp",
+        "xstring": "cpp",
+        "iosfwd": "cpp",
+        "xlocbuf": "cpp",
+        "xutility": "cpp",
+        "sstream": "cpp",
+        "xlocale": "cpp",
+        "format": "cpp",
+        "initializer_list": "cpp",
+        "ostream": "cpp",
+        "xmemory": "cpp",
+        "xlocmes": "cpp",
+        "type_traits": "cpp",
+        "xlocmon": "cpp",
+        "xtr1common": "cpp",
+        "xlocinfo": "cpp",
+        "memory": "cpp",
+        "ios": "cpp"
+    }
+}

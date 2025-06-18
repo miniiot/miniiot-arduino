@@ -197,26 +197,31 @@ public:
         MqttClient.setServer(mqttHost.c_str(), MiniIot_MQTT_PORT);
         MqttClient.setCallback(MiniIotMessage::handleMessage);
 
-        const int max_retries = 3; // 最大重试次数
-        for (int retry_times = 0; retry_times < max_retries && !MqttClient.connected(); ++retry_times)
-        {
-            this->MqttUser = this->ProductId + ";" + this->DeviceId + ";" + mac + ";" + this->SecretType + ";1;" + this->getNowDateTime() + ";" + this->BinInfo;
-            this->MqttPassword = MiniIotUtils::ESPsha1(this->MqttUser + ";天才小坑Bi-<admin@dgwht.com>-(miniIot.dgwht.cn);" + this->Secret);
 
-            digitalWrite(MiniIot_STATE_LED, 0);
-            MiniIot_LOG_LN(F("[MQTT] MQTT连接中..."));
-            if (MqttClient.connect(mqttClientId.c_str(), this->MqttUser.c_str(), this->MqttPassword.c_str()))
-            {
-                MiniIot_LOG_LN(F("[MQTT] MQTT连接成功"));
-                digitalWrite(MiniIot_STATE_LED, 1);
-                this->mqttSubscribe();// 订阅主题
-                return true; // 连接成功，直接返回
-            }
-            MiniIot_LOG_LN("[MQTT] MQTT连接失败：" + this->getMqttErrCodeMsg(MqttClient.state()));
-            digitalWrite(MiniIot_STATE_LED, 1);
-            delay(2000);
+
+        
+        digitalWrite(MiniIot_STATE_LED, 1);
+            
+        this->MqttUser = this->ProductId + ";" + this->DeviceId + ";" + mac + ";" + this->SecretType + ";1;" + this->getNowDateTime() + ";" + this->BinInfo;
+        this->MqttPassword = MiniIotUtils::ESPsha1(this->MqttUser + ";天才小坑Bi-<admin@dgwht.com>-(miniIot.dgwht.cn);" + this->Secret);
+
+        MiniIot_LOG_LN(F("[MQTT] MQTT连接中..."));
+        if (MqttClient.connect(mqttClientId.c_str(), this->MqttUser.c_str(), this->MqttPassword.c_str()))
+        {
+            MiniIot_LOG_LN(F("[MQTT] MQTT连接成功"));
+            this->mqttSubscribe();// 订阅主题
+            return true; // 连接成功
         }
-        return false; // 达到最大重试次数，返回错误
+        MiniIot_LOG(F("[MQTT] MQTT连接失败："));
+        MiniIot_LOG_LN(this->getMqttErrCodeMsg(MqttClient.state()));
+        
+        digitalWrite(MiniIot_STATE_LED, 0);
+        return false; // 连接失败
+    }
+
+    int state()
+    {
+        return MqttClient.state();
     }
 
     bool connected()

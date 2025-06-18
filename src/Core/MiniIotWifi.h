@@ -14,15 +14,18 @@ class MiniIotWifi
 {
 
 private:
+    uint32_t connect_time = 0;
+    uint32_t connect_led_time = 0;
+
     String configName = "/wifiConfig.json";
     #ifdef DEFAULT_WIFI_SSID
         #ifdef DEFAULT_WIFI_PASSWORD
             String jsonData = String("{\"ssid\":\"") + DEFAULT_WIFI_SSID + String("\",\"passwd\":\"") + DEFAULT_WIFI_PASSWORD + String("\"}");
         #else
-            String jsonData = "{\"ssid\":\"miniiot\",\"passwd\":\"miniiot\"}";
+            String jsonData = "{\"ssid\":\"miniiot.top\",\"passwd\":\"88888888\"}";
         #endif
     #else
-        String jsonData = "{\"ssid\":\"miniiot\",\"passwd\":\"miniiot\"}";
+        String jsonData = "{\"ssid\":\"miniiot.top\",\"passwd\":\"88888888\"}";
     #endif
 
     // wifi信息
@@ -122,30 +125,42 @@ private:
     }
 
 public:
+    MiniIotWifi(){
+    }
+
     // 连接WIFI（LED常量）
     bool wifiConnect()
     {
-        this->loadConfig();
 
-        digitalWrite(MiniIot_STATE_LED, 0);
-        int retry_times = 0;
+        if(this->connect_time == 0){
+            this->connect_time = millis();
+            this->loadConfig();
+            WiFi.begin(this->WifiSsid.c_str(), this->WifiPasswd.c_str());
+            MiniIot_LOG(F("[WIFI] WIFI连接中"));
+        }
 
-        WiFi.begin(this->WifiSsid.c_str(), this->WifiPasswd.c_str());
-
-        MiniIot_LOG(F("[WIFI] WIFI连接中"));
-        while (WiFi.status() != WL_CONNECTED)
-        {
-            delay(500);
+        if(this->connect_led_time == 0){
+            this->connect_led_time = millis();
             MiniIot_LOG(".");
-            retry_times++;
-            // 500ms*20=10秒超时
-            if (retry_times >= 20)
+            digitalWrite(MiniIot_STATE_LED, !digitalRead(MiniIot_STATE_LED));
+        }
+
+        if(WiFi.status() != WL_CONNECTED)
+        {
+            // 1s刷新一次LED
+            if(millis() - this->connect_led_time >= 1000){
+                this->connect_led_time = 0;
+            }
+
+            // 10秒超时
+            if (millis() - this->connect_time >= 10*1000)
             {
                 MiniIot_LOG_LN();
                 MiniIot_LOG_LN(F("[WIFI] WIFI连接超时"));
-                digitalWrite(MiniIot_STATE_LED, 1);
-                return false;
+                this->connect_time = 0;
             }
+
+            return false;
         }
 
         MiniIot_LOG_LN();
@@ -154,7 +169,7 @@ public:
         MiniIot_LOG(F(",MAC: "));
         MiniIot_LOG_LN(WiFi.macAddress());
 
-        digitalWrite(MiniIot_STATE_LED, 1);
+        this->connect_time = 0;
         return true;
     }
 

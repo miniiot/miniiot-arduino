@@ -48,6 +48,10 @@ class MiniIot
 private:
     int workstate = MINIIOT_WORK_STATE_INIT; // 主进程工作状态
 
+    int serverErrNum = 0; // 服务器重连次数
+    int serverReconnectTime = 2000; // mqtt重连间隔
+    uint32_t serverConnectTime = 0; // mqtt连接时间
+
     String ProductId;
     String DeviceId;
 
@@ -322,8 +326,6 @@ void MiniIot::loop()
         MiniIotAdminWebServerClient.loop();
     #endif
 
-    static int serverErrNum = 0; // 服务器重连次数，使用static变量避免每次进入函数时重置
-
     switch (this->workstate)
     {
     case MINIIOT_WORK_STATE_INIT:                                // 初始化
@@ -334,6 +336,9 @@ void MiniIot::loop()
         #ifdef __UseWifiClient__
             if (MiniIotWifiObj.wifiConnect() == true)
             {
+                this->serverReconnectTime = 1000*2;
+                this->serverErrNum = 0;
+
                 this->workstate = MINIIOT_WORK_STATE_SERVER_CONNECTING; // 下一步，服务器连接
             }
             else
@@ -346,12 +351,12 @@ void MiniIot::loop()
     case MINIIOT_WORK_STATE_SERVER_CONNECTING: // 服务器连接
         if (MiniIotClient.mqttConnect(MiniIotWifiObj.getWifiMac()) == true)
         {
-            serverErrNum = 0;
+            this->serverErrNum = 0;
             this->workstate = MINIIOT_WORK_STATE_WORKING; // 下一步，工作中
         }
         else
         {
-            serverErrNum++;
+            this->serverErrNum++;
             this->workstate = MINIIOT_WORK_STATE_SERVER_ERROR; // 下一步，服务器连接错误或断开
         }
         break;
@@ -379,11 +384,20 @@ void MiniIot::loop()
         break;
 
     case MINIIOT_WORK_STATE_SERVER_ERROR: // 服务器连接错误或断开
-        if (serverErrNum > 3)
+        if (this->serverErrNum > 5)
         {
-            delay(30000); // 30秒后重试
+            this->serverReconnectTime = 1000*30; // 30秒后重试
         }
-        this->workstate = MINIIOT_WORK_STATE_SERVER_CONNECTING; // 下一步，服务器连接
+
+        if((millis() - this->serverConnectTime) > this->serverReconnectTime){
+            this->workstate = MINIIOT_WORK_STATE_SERVER_CONNECTING; // 下一步，服务器连接
+            this->serverConnectTime = millis();
+        }
+        
+        if (MiniIotWifiObj.getStatus() != WL_CONNECTED)
+        {
+            this->workstate = MINIIOT_WORK_STATE_NETWORK_ERROR; // 下一步，网络连接错误或断开
+        }
         break;
 
     case MINIIOT_WORK_STATE_NETWORK_ERROR:                       // 网络连接错误或断开
