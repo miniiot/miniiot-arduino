@@ -1,7 +1,7 @@
 #pragma once
 
 // MiniIot库文件版本
-#define MiniIot_VERSION "miniiot_v1.1.0_250616"
+#define MiniIot_VERSION "miniiot_v2.0.1_250716"
 
 #ifndef APP_VERSION
     #define APP_VERSION "0.0.1"
@@ -18,6 +18,10 @@
 -   优化：优化wifi与mqtt连接逻辑，避免阻塞主线程。
 -   变更：wifi默认账号改为 miniiot.top
 -   变更：wifi默认密码改为 88888888
+
+=======v2.0.1_250716=======
+-   新增：尝试适配w5500以太网模块。
+-   变更：修改mqtt密码计算盐值。v2.0.1以前版本无法上线。
 */
 
 // MiniIot状态指示灯IO
@@ -56,6 +60,7 @@
 
 // 默认使用wifi客户端、MQTT客户端
 #define __UseWifiClient__
+// #define __UseEthernetClient__
 #define __UseMqttClient__
 
 // 开启后台管理服务

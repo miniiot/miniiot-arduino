@@ -26,6 +26,16 @@
     #include "Core/MiniIotOTA.h"
 #endif
 
+// 网口设备
+#ifdef __UseEthernetClient__
+    #include "Core/MiniIotEthernet.h"
+    MiniIotEthernet MiniIotEthernetObj("a4:cf:12:dd:a5:9e");
+
+    #include <EthernetClient.h>
+    EthernetClient MiniIotNetworkClient;
+#endif
+
+
 // 消息处理
 #include "MiniIotMessage.h"
 
@@ -96,6 +106,10 @@ private:
         digitalWrite(MiniIot_STATE_LED, 1);
 
         MiniIotMessage::attachSysCallback(SysCallBack);
+
+        #ifdef __UseEthernetClient__
+        MiniIotEthernetObj.init();
+        #endif
 
         this->init_admin_web_server(); // 管理系统初始化
     }
@@ -334,22 +348,31 @@ void MiniIot::loop()
 
     case MINIIOT_WORK_STATE_NETWORK_CONNECTING: // 网络连接
         #ifdef __UseWifiClient__
-            if (MiniIotWifiObj.wifiConnect() == true)
-            {
-                this->serverReconnectTime = 1000*2;
-                this->serverErrNum = 0;
-
-                this->workstate = MINIIOT_WORK_STATE_SERVER_CONNECTING; // 下一步，服务器连接
-            }
-            else
-            {
-                this->workstate = MINIIOT_WORK_STATE_NETWORK_ERROR; // 下一步，网络连接错误或断开
-            }
+        if (MiniIotWifiObj.wifiConnect() == true)
         #endif
+        #ifdef __UseEthernetClient__
+        if (MiniIotEthernetObj.connect() == true)
+        #endif
+        {
+            this->serverReconnectTime = 1000*2;
+            this->serverErrNum = 0;
+
+            this->workstate = MINIIOT_WORK_STATE_SERVER_CONNECTING; // 下一步，服务器连接
+        }
+        else
+        {
+            this->workstate = MINIIOT_WORK_STATE_NETWORK_ERROR; // 下一步，网络连接错误或断开
+        }
         break;
 
     case MINIIOT_WORK_STATE_SERVER_CONNECTING: // 服务器连接
+        #ifdef __UseWifiClient__
         if (MiniIotClient.mqttConnect(MiniIotWifiObj.getWifiMac()) == true)
+        #endif
+        
+        #ifdef __UseEthernetClient__
+        if (MiniIotClient.mqttConnect(MiniIotEthernetObj.getMac()) == true)
+        #endif
         {
             this->serverErrNum = 0;
             this->workstate = MINIIOT_WORK_STATE_WORKING; // 下一步，工作中
@@ -367,19 +390,18 @@ void MiniIot::loop()
         if (!MiniIotClient.connected())
         {
             #ifdef __UseWifiClient__
-                if (MiniIotWifiObj.getStatus() != WL_CONNECTED)
-                {
-                    this->workstate = MINIIOT_WORK_STATE_NETWORK_ERROR; // 下一步，网络连接错误或断开
-                }
-                else
-                {
-                    this->workstate = MINIIOT_WORK_STATE_SERVER_ERROR; // 下一步，服务器连接错误或断开
-                }
+            if (MiniIotWifiObj.getStatus() != WL_CONNECTED)
             #endif
-
             #ifdef __UseEthernetClient__
-                this->workstate = MINIIOT_WORK_STATE_SERVER_ERROR; // 下一步，服务器连接错误或断开
+            if (MiniIotEthernetObj.getStatus() != 1)
             #endif
+            {
+                this->workstate = MINIIOT_WORK_STATE_NETWORK_ERROR; // 下一步，网络连接错误或断开
+            }
+            else
+            {
+                this->workstate = MINIIOT_WORK_STATE_SERVER_ERROR; // 下一步，服务器连接错误或断开
+            }
         }
         break;
 
@@ -394,7 +416,13 @@ void MiniIot::loop()
             this->serverConnectTime = millis();
         }
         
+        #ifdef __UseWifiClient__
         if (MiniIotWifiObj.getStatus() != WL_CONNECTED)
+        #endif
+        
+        #ifdef __UseEthernetClient__
+        if (MiniIotEthernetObj.getStatus() != 1)
+        #endif
         {
             this->workstate = MINIIOT_WORK_STATE_NETWORK_ERROR; // 下一步，网络连接错误或断开
         }

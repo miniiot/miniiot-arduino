@@ -1,7 +1,12 @@
 ## 官网地址
 http://www.miniiot.top
 
+## 安装库文件
+
+> 直接在Arduino的库管理里搜索miniiot即可安装。
+
 ## 示例代码(esp8266)
+
 ```c++
 // 登录控制台与查看文档请访问官网：http://www.miniiot.top
 

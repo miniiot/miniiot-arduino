@@ -55,7 +55,7 @@ void setup()
     MiniIot.begin("ZnnQmFTH", "h5Tmn1l3m2S9DY2I");
 
     // 使用设备密钥初始化MiniIot，（产品ID，设备ID，设备密钥）
-    // 必须现在平台上添加设备
+    // 必须先在平台上添加设备
     // MiniIot.begin("ZnnQmFTH", "Ab79b2a5a3", "h5Tmn1l3m2S9DY2I");
 
     // 绑定回调函数
@@ -68,7 +68,7 @@ void loop()
     
     // 服务器连接成功
     if(MiniIot.running()){
-        // 不能直接使用delay延时
+        // 不能直接使用默认的delay()延时，会导致设备掉线，需要使用MiniIot.delay()
         MiniIot.delay(3000);
 
         Serial.printf("剩余内存: %dB\n", ESP.getFreeHeap());

@@ -20,6 +20,7 @@
 #ifdef __UseEthernetClient__
     #include <Ethernet.h>
     #include <EthernetClient.h>
+    #include <EthernetHttpClient.h>
 #endif
 
 
@@ -53,11 +54,6 @@ private:
 
 #ifdef __UseWifiClient__
         HTTPClient httpClient;
-#endif
-
-#ifdef __UseEthernetClient__
-        EthernetHTTPClient httpClient;
-#endif
 
         String url = String("http://") + MiniIot_HTTP_HOST + String(":8880/miniiot/device/common/date_time");
         if (!httpClient.begin(this->MiniIotNetworkClient, url))
@@ -76,6 +72,25 @@ private:
 
         String html = httpClient.getString();
         httpClient.end();
+#endif
+
+#ifdef __UseEthernetClient__
+        EthernetHttpClient httpClient(this->MiniIotNetworkClient, MiniIot_HTTP_HOST, 8880);
+        httpClient.beginRequest();
+        httpClient.get("/miniiot/device/common/date_time");
+        httpClient.endRequest();
+
+        int statusCode = httpClient.responseStatusCode();
+        if (statusCode != 200)
+        {
+            MiniIot_LOG_LN("[MQTT] 时间获取失败，HTTP代码: " + String(statusCode));
+            return "2022-07-07 00:00:00;9527";
+        }
+        
+        String html = httpClient.responseBody();
+#endif
+
+
         MiniIot_LOG(F("[MQTT] "));
         MiniIot_LOG_LN(html);
 
@@ -192,7 +207,7 @@ public:
 
         const String mqttClientId = this->ProductId + "_" + this->DeviceId; // MQTT客户端ID
         MqttClient.setBufferSize(512);                                     // 设置MQTT缓冲区大小
-        MqttClient.setKeepAlive(30);                                       // 设置MQTT心跳间隔
+        MqttClient.setKeepAlive(10);                                      // 设置MQTT心跳间隔
         
         MqttClient.setServer(mqttHost.c_str(), MiniIot_MQTT_PORT);
         MqttClient.setCallback(MiniIotMessage::handleMessage);
@@ -203,7 +218,7 @@ public:
         digitalWrite(MiniIot_STATE_LED, 1);
             
         this->MqttUser = this->ProductId + ";" + this->DeviceId + ";" + mac + ";" + this->SecretType + ";1;" + this->getNowDateTime() + ";" + this->BinInfo;
-        this->MqttPassword = MiniIotUtils::ESPsha1(this->MqttUser + ";天才小坑Bi-<admin@dgwht.com>-(miniIot.dgwht.cn);" + this->Secret);
+        this->MqttPassword = MiniIotUtils::ESPsha1(this->MqttUser + ";天才小坑Bi-<admin@dgwht.com>;" + this->Secret);
 
         MiniIot_LOG_LN(F("[MQTT] MQTT连接中..."));
         if (MqttClient.connect(mqttClientId.c_str(), this->MqttUser.c_str(), this->MqttPassword.c_str()))
