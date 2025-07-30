@@ -105,6 +105,8 @@ void ServiceCallbackFunction(JsonObject dataObj)
 void setup()
 {
     Serial.begin(115200);
+    Serial.print("开发板型号: ");
+    Serial.println(ARDUINO_BOARD);
 
     pinMode(SYS_RST_IO, INPUT_PULLUP);
 
