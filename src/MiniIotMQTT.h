@@ -207,15 +207,15 @@ public:
 
         const String mqttClientId = this->ProductId + "_" + this->DeviceId; // MQTT客户端ID
         MqttClient.setBufferSize(512);                                     // 设置MQTT缓冲区大小
-        MqttClient.setKeepAlive(10);                                      // 设置MQTT心跳间隔
+        MqttClient.setKeepAlive(MiniIot_MQTT_KeepAlive);                                      // 设置MQTT心跳间隔
         
         MqttClient.setServer(mqttHost.c_str(), MiniIot_MQTT_PORT);
         MqttClient.setCallback(MiniIotMessage::handleMessage);
 
-
-
         
-        digitalWrite(MiniIot_STATE_LED, 1);
+        #ifdef MiniIot_STATE_LED
+            digitalWrite(MiniIot_STATE_LED, 1);
+        #endif
             
         this->MqttUser = this->ProductId + ";" + this->DeviceId + ";" + mac + ";" + this->SecretType + ";1;" + this->getNowDateTime() + ";" + this->BinInfo;
         this->MqttPassword = MiniIotUtils::ESPsha1(this->MqttUser + ";天才小坑Bi-<admin@dgwht.com>;" + this->Secret);
@@ -230,7 +230,10 @@ public:
         MiniIot_LOG(F("[MQTT] MQTT连接失败："));
         MiniIot_LOG_LN(this->getMqttErrCodeMsg(MqttClient.state()));
         
-        digitalWrite(MiniIot_STATE_LED, 0);
+        #ifdef MiniIot_STATE_LED
+            digitalWrite(MiniIot_STATE_LED, 0);
+        #endif
+        
         return false; // 连接失败
     }
 

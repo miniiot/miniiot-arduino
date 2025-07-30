@@ -1,7 +1,7 @@
 #pragma once
 
 // MiniIot库文件版本
-#define MiniIot_VERSION "miniiot_v2.0.1_250716"
+#define MiniIot_VERSION "miniiot_v2.0.3_250730"
 
 #ifndef APP_VERSION
     #define APP_VERSION "0.0.1"
@@ -22,11 +22,17 @@
 =======v2.0.1_250716=======
 -   新增：尝试适配w5500以太网模块。
 -   变更：修改mqtt密码计算盐值。v2.0.1以前版本无法上线。
+
+=======v2.1.0_250730=======
+-   优化：优化wifi配置，LittleFS 初始化失败时，使用默认配置。
+-   新增：ESP8266、ESP32C3、ESP32S3已适配w5500以太网模块。ESP32C3 Flash大小为4MB时，Partition Scheme需要选择【No OTA (2MB APP/2MB SPIFFS)】
 */
 
 // MiniIot状态指示灯IO
 #ifndef MiniIot_STATE_LED
-    #define MiniIot_STATE_LED LED_BUILTIN
+    #ifdef LED_BUILTIN
+        #define MiniIot_STATE_LED LED_BUILTIN
+    #endif
 #endif
 
 // 系统管理服务端口
@@ -58,10 +64,28 @@
     #define MiniIot_MQTT_PORT 2082
 #endif
 
-// 默认使用wifi客户端、MQTT客户端
-#define __UseWifiClient__
-// #define __UseEthernetClient__
+// 默认使用wifi客户端，优先使用网口以太网模块
+#ifdef MiniIot_USE_ETH
+    #define __UseEthernetClient__
+#else
+    #define __UseWifiClient__
+#endif
+
+// 以太网模块复位控制IO
+#ifndef MiniIot_ETH_RST
+    #define MiniIot_ETH_RST 4
+#endif
+
+// 默认使用MQTT客户端
 #define __UseMqttClient__
+// mqtt客户端心跳时间
+#ifndef MiniIot_MQTT_KeepAlive
+    #ifdef MiniIot_USE_ETH
+        #define MiniIot_MQTT_KeepAlive 5
+    #else
+        #define MiniIot_MQTT_KeepAlive 30
+    #endif
+#endif
 
 // 开启后台管理服务
 #ifdef MiniIot_Admin_Service

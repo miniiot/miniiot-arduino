@@ -6,7 +6,8 @@
 #include <Ethernet.h>
 #include <EthernetClient.h>
 
-#define RST 2 // W5100 RST
+#include "MiniIotUtils.h"
+
 
 class MiniIotEthernet
 {
@@ -17,11 +18,11 @@ private:
     uint32_t connect_led_time = 0;
 
     String configName = "/ethernetConfig.json";
-    String jsonData = "{\"ssid\":\"miniiot.top\",\"passwd\":\"88888888\"}";
+    // String jsonData = "{\"ssid\":\"miniiot.top\",\"passwd\":\"88888888\"}";
 
     // wifi信息
-    String WifiSsid;
-    String WifiPasswd;
+    // String WifiSsid;
+    // String WifiPasswd;
 
     String mac;
 
@@ -42,80 +43,80 @@ private:
     }
 
     // 读取本地wifi信息
-    bool loadConfig()
-    {
-        if (!initializeLittleFS())
-        {
-            return false;
-        }
+    // bool loadConfig()
+    // {
+    //     if (!initializeLittleFS())
+    //     {
+    //         return false;
+    //     }
 
-        File config = LittleFS.open(this->configName, "r");
-        if (!config)
-        {
-            MiniIot_LOG(F("[WIFI] 无法打开配置文件："));
-            MiniIot_LOG_LN(this->configName);
-            MiniIot_LOG(F("[WIFI] 使用默认配置："));
-            MiniIot_LOG_LN(this->jsonData);
-        }
-        else
-        {
-            this->jsonData = config.readString();
-            config.close();
-            LittleFS.end();
+    //     File config = LittleFS.open(this->configName, "r");
+    //     if (!config)
+    //     {
+    //         MiniIot_LOG(F("[WIFI] 无法打开配置文件："));
+    //         MiniIot_LOG_LN(this->configName);
+    //         MiniIot_LOG(F("[WIFI] 使用默认配置："));
+    //         MiniIot_LOG_LN(this->jsonData);
+    //     }
+    //     else
+    //     {
+    //         this->jsonData = config.readString();
+    //         config.close();
+    //         LittleFS.end();
 
-            MiniIot_LOG(F("[WIFI] 成功读取配置："));
-            MiniIot_LOG_LN(this->jsonData);
-        }
+    //         MiniIot_LOG(F("[WIFI] 成功读取配置："));
+    //         MiniIot_LOG_LN(this->jsonData);
+    //     }
 
-        DynamicJsonDocument JSON_Buffer(this->jsonData.length() + 20);
-        if (deserializeJson(JSON_Buffer, this->jsonData) != DeserializationError::Ok)
-        {
-            MiniIot_LOG_LN(F("[WIFI] 配置解析JSON错误"));
-            return false;
-        }
+    //     DynamicJsonDocument JSON_Buffer(this->jsonData.length() + 20);
+    //     if (deserializeJson(JSON_Buffer, this->jsonData) != DeserializationError::Ok)
+    //     {
+    //         MiniIot_LOG_LN(F("[WIFI] 配置解析JSON错误"));
+    //         return false;
+    //     }
 
-        this->WifiSsid = JSON_Buffer["ssid"].as<String>();
-        this->WifiPasswd = JSON_Buffer["passwd"].as<String>();
+    //     this->WifiSsid = JSON_Buffer["ssid"].as<String>();
+    //     this->WifiPasswd = JSON_Buffer["passwd"].as<String>();
 
-        MiniIot_LOG(F("[WIFI] 成功解析配置："));
-        MiniIot_LOG_LN(this->jsonData);
-        return true;
-    }
+    //     MiniIot_LOG(F("[WIFI] 成功解析配置："));
+    //     MiniIot_LOG_LN(this->jsonData);
+    //     return true;
+    // }
 
     // 配置写入
-    bool write()
-    {
-        if (!initializeLittleFS())
-        {
-            return false;
-        }
+    // bool write()
+    // {
+    //     if (!initializeLittleFS())
+    //     {
+    //         return false;
+    //     }
 
-        File config = LittleFS.open(this->configName, "w");
-        if (!config)
-        {
-            MiniIot_LOG(F("[WIFI] 无法打开配置文件："));
-            MiniIot_LOG_LN(this->configName);
-            LittleFS.end();
-            return false;
-        }
+    //     File config = LittleFS.open(this->configName, "w");
+    //     if (!config)
+    //     {
+    //         MiniIot_LOG(F("[WIFI] 无法打开配置文件："));
+    //         MiniIot_LOG_LN(this->configName);
+    //         LittleFS.end();
+    //         return false;
+    //     }
 
-        String data = "{\"ssid\":\"" + this->WifiSsid + "\",\"passwd\":\"" + this->WifiPasswd + "\"}";
-        if (config.print(data) != data.length())
-        {
-            config.close();
-            LittleFS.end();
-            MiniIot_LOG(F("[WIFI] 配置写入失败："));
-            MiniIot_LOG_LN(this->configName);
-            return false;
-        }
+    //     String data = "{\"ssid\":\"" + this->WifiSsid + "\",\"passwd\":\"" + this->WifiPasswd + "\"}";
+    //     if (config.print(data) != data.length())
+    //     {
+    //         config.close();
+    //         LittleFS.end();
+    //         MiniIot_LOG(F("[WIFI] 配置写入失败："));
+    //         MiniIot_LOG_LN(this->configName);
+    //         return false;
+    //     }
 
-        MiniIot_LOG(F("[WIFI] 配置写入成功："));
-        MiniIot_LOG_LN(data);
-        config.close();
-        LittleFS.end();
+    //     MiniIot_LOG(F("[WIFI] 配置写入成功："));
+    //     MiniIot_LOG_LN(data);
+    //     config.close();
+    //     LittleFS.end();
 
-        return true;
-    }
+    //     return true;
+    // }
 
     bool status(){
         int code1 = Ethernet.hardwareStatus();
@@ -139,7 +140,11 @@ private:
     }
 
     void begin(){
-        byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xDE, 0xED};
+        String macStr = MiniIotUtils::getMacByChipId();
+        this->mac = macStr;
+        byte mac[6];
+        sscanf(macStr.c_str(), "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx", &mac[0], &mac[1], &mac[2], &mac[3], &mac[4], &mac[5]);
+        
         IPAddress ip(192, 168, 0, 29);
         IPAddress myDns(119, 29, 29, 29);
 
@@ -162,18 +167,16 @@ private:
     }
 
 public:
-    MiniIotEthernet(String mac){
-        this->mac = mac;
-    }
 
     void init(){
-        pinMode(RST, OUTPUT);
-        Ethernet.init(15); // 初始化Ethernet板子
-        digitalWrite(RST, HIGH);
+        // 初始化Ethernet板子
+        pinMode(MiniIot_ETH_RST, OUTPUT);
+        Ethernet.init(SS);
+        digitalWrite(MiniIot_ETH_RST, HIGH);
         delay(200);
-        digitalWrite(RST, LOW);
+        digitalWrite(MiniIot_ETH_RST, LOW);
         delay(200);
-        digitalWrite(RST, HIGH);
+        digitalWrite(MiniIot_ETH_RST, HIGH);
         delay(200);
 
         MiniIot_LOG_LN(F("[Ethernet] 初始化Ethernet模块"));
@@ -185,7 +188,9 @@ public:
     {
         if(this->connect_led_time == 0){
             this->connect_led_time = millis();
-            digitalWrite(MiniIot_STATE_LED, !digitalRead(MiniIot_STATE_LED));
+            #ifdef MiniIot_STATE_LED
+                digitalWrite(MiniIot_STATE_LED, !digitalRead(MiniIot_STATE_LED));
+            #endif
         }
         
         // 1s刷新一次LED
@@ -257,10 +262,10 @@ public:
     }
 
     // 更新配置
-    void update(String wifiName, String wifiPassword)
-    {
-        this->WifiSsid = wifiName;
-        this->WifiPasswd = wifiPassword;
-        this->write();
-    }
+    // void update(String wifiName, String wifiPassword)
+    // {
+    //     this->WifiSsid = wifiName;
+    //     this->WifiPasswd = wifiPassword;
+    //     this->write();
+    // }
 };

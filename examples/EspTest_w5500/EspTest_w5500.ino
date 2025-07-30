@@ -1,89 +1,27 @@
 // 登录控制台与查看文档请访问官网：http://www.miniiot.top
 
 // 当前程序版本（仅用于后台展示）
-#define APP_VERSION "all_2507301626"
-
-// 默认WIFI配置（出厂设置）
-#define DEFAULT_WIFI_SSID "Tenda_375160章"
-#define DEFAULT_WIFI_PASSWORD "87472998"
+#define APP_VERSION "w5500_2507301626"
 
 // 使用W5500以太网模块
-// #define MiniIot_USE_ETH
+#define MiniIot_USE_ETH
 // W5500以太网模块复位控制IO（默认io4）
-// #define MiniIot_ETH_RST 4
+#define MiniIot_ETH_RST 4
 
+// 使用以太网模块时通过心跳判断网络状态
 // MQTT心跳间隔（秒）
 // #define MiniIot_MQTT_KeepAlive 5
 
-// 使用ip测试地址（预留私有部署与调试使用，不必理会）
-// #define MiniIot_MQTT_HOST_IS_IP
-// #define MiniIot_MQTT_HOST "192.168.0.192"
-// #define MiniIot_HTTP_HOST "192.168.0.192"
-
-// 后台服务（用于上位机调试，开发测试中，建议关闭）
-// #define MiniIot_Admin_Service
-
-// 打印日志（建议调试完成后注释掉）
-#define MiniIot_DEBUG_LOG
-
-// 状态指示灯(低电平亮，esp8266默认io2的板载led，esp32无默认)
-// #define MiniIot_STATE_LED 2
-
 // 导入miniiot
 #include <MiniIot.h>
-// 定时任务（与miniiot无关，用于实现长按恢复出厂设置）
-#include <Ticker.h>
 
-// 复用Boot按键用于恢复出厂设置
-#ifdef ESP8266
-    #define SYS_RST_IO 0
-#endif
-
-#ifdef ESP32
-    #define SYS_RST_IO 9
-#endif
-
-// 恢复出厂设置计数(秒)
-int sys_rst_count = 0;
 
 int num = 0;
 
-Ticker TickerRST;
-
-
-// 按5秒开发板上的按钮恢复出厂设置
-void SysRstfun()
-{
-    if (digitalRead(SYS_RST_IO) == LOW)
-    {
-        sys_rst_count++;
-    }
-    else
-    {
-        sys_rst_count = 0;
-    }
-    if (sys_rst_count >= 5)
-    {
-        // 格式化存储
-        MiniIot.RESET();
-    }
-}
-
-
-// 批量上报属性
-void test_1(){
-    // 所有的key+value之和不要超过40个字符，超过请分批上报
-    JSONVar myObject;
-    myObject["switch_1"] = "1";
-    myObject["switch_2"] = "2";
-    myObject["switch_3"] = (String)num;
-
-    MiniIot.propertyPost(myObject);
-}
 
 void addNum(){
     // 上报属性
-    MiniIot.propertyPost("num_1", num);
+    MiniIot.propertyPost("test", num);
     num++;
 }
 
@@ -116,17 +54,10 @@ void ServiceCallbackFunction(JsonObject dataObj)
 void setup()
 {
     Serial.begin(115200);
-    Serial.print("开发板型号: ");
-    Serial.println(ARDUINO_BOARD);
-
-    pinMode(SYS_RST_IO, INPUT_PULLUP);
-
-    // 绑定定时任务回调函数
-    TickerRST.attach(1, SysRstfun);
 
     // 使用产品密钥初始化MiniIot，（产品ID，产品密钥）
     // 设备不存在会自动注册添加设备
-    MiniIot.begin("ZnnQmFTH", "h5Tmn1l3m2S9DY2I");
+    MiniIot.begin("OWO56Olq", "C2EsALWiPYwd4sAd");
 
     // 使用设备密钥初始化MiniIot，（产品ID，设备ID，设备密钥）
     // 必须先在平台上添加设备
@@ -140,6 +71,20 @@ void setup()
     Serial.print("当前固件大小:");Serial.println(ESP.getSketchSize());
     Serial.print("剩余固件空间:");Serial.println(ESP.getFreeSketchSpace());
     
+
+    // w5500以太网模块接线，无法更改
+    Serial.println("w5500以太网模块接线：");
+    Serial.print("MO:");
+    Serial.println(MOSI);
+
+    Serial.print("MI:");
+    Serial.println(MISO);
+
+    Serial.print("SCLK:");
+    Serial.println(SCK);
+
+    Serial.print("SS:");
+    Serial.println(SS);
 }
 
 void loop()

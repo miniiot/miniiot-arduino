@@ -53,12 +53,6 @@ private:
     {
         if (!initializeLittleFS())
         {
-            return false;
-        }
-
-        File config = LittleFS.open(this->configName, "r");
-        if (!config)
-        {
             MiniIot_LOG(F("[WIFI] 无法打开配置文件："));
             MiniIot_LOG_LN(this->configName);
             MiniIot_LOG(F("[WIFI] 使用默认配置："));
@@ -66,12 +60,23 @@ private:
         }
         else
         {
-            this->jsonData = config.readString();
-            config.close();
-            LittleFS.end();
+            File config = LittleFS.open(this->configName, "r");
+            if (!config)
+            {
+                MiniIot_LOG(F("[WIFI] 无法打开配置文件："));
+                MiniIot_LOG_LN(this->configName);
+                MiniIot_LOG(F("[WIFI] 使用默认配置："));
+                MiniIot_LOG_LN(this->jsonData);
+            }
+            else
+            {
+                this->jsonData = config.readString();
+                config.close();
+                LittleFS.end();
 
-            MiniIot_LOG(F("[WIFI] 成功读取配置："));
-            MiniIot_LOG_LN(this->jsonData);
+                MiniIot_LOG(F("[WIFI] 成功读取配置："));
+                MiniIot_LOG_LN(this->jsonData);
+            }
         }
 
         DynamicJsonDocument JSON_Buffer(this->jsonData.length() + 20);
@@ -135,14 +140,19 @@ public:
         if(this->connect_time == 0){
             this->connect_time = millis();
             this->loadConfig();
+            yield();
             WiFi.begin(this->WifiSsid.c_str(), this->WifiPasswd.c_str());
             MiniIot_LOG(F("[WIFI] WIFI连接中"));
         }
+        yield();
 
         if(this->connect_led_time == 0){
             this->connect_led_time = millis();
             MiniIot_LOG(".");
-            digitalWrite(MiniIot_STATE_LED, !digitalRead(MiniIot_STATE_LED));
+            
+            #ifdef MiniIot_STATE_LED
+                digitalWrite(MiniIot_STATE_LED, !digitalRead(MiniIot_STATE_LED));
+            #endif
         }
 
         if(WiFi.status() != WL_CONNECTED)

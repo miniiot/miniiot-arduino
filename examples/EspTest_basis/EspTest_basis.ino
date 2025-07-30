@@ -1,7 +1,7 @@
 // 登录控制台与查看文档请访问官网：http://www.miniiot.top
 
 // 当前程序版本（仅用于后台展示）
-#define APP_VERSION "basis_2504231612"
+#define APP_VERSION "basis_2507301626"
 
 // 默认WIFI配置（出厂设置）
 #define DEFAULT_WIFI_SSID "Tenda_375160章"
@@ -18,7 +18,7 @@ int num = 0;
 
 void addNum(){
     // 上报属性
-    MiniIot.propertyPost("num_1", num);
+    MiniIot.propertyPost("test", num);
     num++;
 }
 

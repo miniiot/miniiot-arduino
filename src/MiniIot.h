@@ -29,7 +29,7 @@
 // 网口设备
 #ifdef __UseEthernetClient__
     #include "Core/MiniIotEthernet.h"
-    MiniIotEthernet MiniIotEthernetObj("a4:cf:12:dd:a5:9e");
+    MiniIotEthernet MiniIotEthernetObj;
 
     #include <EthernetClient.h>
     EthernetClient MiniIotNetworkClient;
@@ -102,8 +102,11 @@ private:
     void init()
     {
         // 指示灯初始化（低电平亮）
-        pinMode(MiniIot_STATE_LED, OUTPUT);
-        digitalWrite(MiniIot_STATE_LED, 1);
+        
+        #ifdef MiniIot_STATE_LED
+            pinMode(MiniIot_STATE_LED, OUTPUT);
+            digitalWrite(MiniIot_STATE_LED, 1);
+        #endif
 
         MiniIotMessage::attachSysCallback(SysCallBack);
 
@@ -165,6 +168,8 @@ public:
     {
         Serial.println();
         Serial.println();
+        Serial.print(F("开发板型号: "));
+        Serial.println(ARDUINO_BOARD);
         Serial.println("[MiniIot] 库版本：" + (String)MiniIot_VERSION);
         Serial.println("[MiniIot] 程序版本：" + (String)APP_VERSION);
         Serial.println("[MiniIot] 产品ID：" + ProductId_);
@@ -185,6 +190,8 @@ public:
 
         Serial.println();
         Serial.println();
+        Serial.print(F("开发板型号: "));
+        Serial.println(ARDUINO_BOARD);
         Serial.println("[MiniIot] 库版本：" + (String)MiniIot_VERSION);
         Serial.println("[MiniIot] 程序版本：" + (String)APP_VERSION);
         Serial.println("[MiniIot] 产品ID：" + ProductId_);

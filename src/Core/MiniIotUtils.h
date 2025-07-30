@@ -46,6 +46,21 @@ public:
 #endif
     }
 
+    // 通过芯片ID生成mac地址
+    static String getMacByChipId()
+    {
+        String chipId = ESPchipId();
+        String mac = "";
+
+        for (int i = 0; i < 6; i++) {
+            mac += String(chipId[i], HEX);
+            if (i < 5) {
+                mac += ':';
+            }
+        }
+        return mac;
+    }
+
     // 获取指定长度随机字符串
     static String randomString(int length)
     {
