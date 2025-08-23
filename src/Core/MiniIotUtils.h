@@ -50,11 +50,11 @@ public:
     static String getMacByChipId()
     {
         String chipId = ESPchipId();
-        String mac = "";
+        String mac = "D0:";
 
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < 5; i++) {
             mac += String(chipId[i], HEX);
-            if (i < 5) {
+            if (i < 4) {
                 mac += ':';
             }
         }

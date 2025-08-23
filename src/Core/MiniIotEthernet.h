@@ -150,7 +150,7 @@ private:
 
         MiniIot_LOG_LN();
         MiniIot_LOG_LN(F("[Ethernet] 初始化Ethernet模块"));
-        
+
         digitalWrite(MiniIot_ETH_RST, HIGH);
         delay(200);
         digitalWrite(MiniIot_ETH_RST, LOW);
@@ -170,8 +170,6 @@ private:
         MiniIot_LOG(F(",MAC: "));
         MiniIot_LOG_LN(this->mac);
 
-        delay(2000);
-        this->status();
         this->init_time = millis();
     }
 
