@@ -135,10 +135,10 @@ void setup()
     // 绑定回调函数
     MiniIot.attach(ServiceCallbackFunction);
 
-    Serial.printf("剩余内存: %dB\n", ESP.getFreeHeap());
-    Serial.print("cpu运行频率:");Serial.println(ESP.getCpuFreqMHz());
-    Serial.print("当前固件大小:");Serial.println(ESP.getSketchSize());
-    Serial.print("剩余固件空间:");Serial.println(ESP.getFreeSketchSpace());
+    Serial.printf("cpu运行频率:%d MHz\n", ESP.getCpuFreqMHz());
+    Serial.printf("当前固件大小:%d KB\n", ESP.getSketchSize() / 1024);
+    Serial.printf("剩余固件空间:%d KB\n", ESP.getFreeSketchSpace() / 1024);
+    Serial.printf("剩余内存:%d KB\n", ESP.getFreeHeap() / 1024);
     
 }
 
@@ -151,6 +151,6 @@ void loop()
         // 不能直接使用默认的delay()延时，会导致设备掉线，需要使用MiniIot.delay()
         MiniIot.delay(3000);
 
-        Serial.printf("剩余内存: %dB\n", ESP.getFreeHeap());
+        Serial.printf("剩余内存:%d KB\n", ESP.getFreeHeap() / 1024);
     }
 }

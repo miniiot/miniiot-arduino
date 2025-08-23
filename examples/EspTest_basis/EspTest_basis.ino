@@ -71,6 +71,6 @@ void loop()
         // 不能直接使用默认的delay()延时，会导致设备掉线，需要使用MiniIot.delay()
         MiniIot.delay(3000);
 
-        Serial.printf("剩余内存: %dB\n", ESP.getFreeHeap());
+        Serial.printf("剩余内存:%d KB\n", ESP.getFreeHeap() / 1024);
     }
 }

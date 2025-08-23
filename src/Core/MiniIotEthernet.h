@@ -149,6 +149,15 @@ private:
         IPAddress myDns(119, 29, 29, 29);
 
         MiniIot_LOG_LN();
+        MiniIot_LOG_LN(F("[Ethernet] 初始化Ethernet模块"));
+        
+        digitalWrite(MiniIot_ETH_RST, HIGH);
+        delay(200);
+        digitalWrite(MiniIot_ETH_RST, LOW);
+        delay(200);
+        digitalWrite(MiniIot_ETH_RST, HIGH);
+        delay(200);
+
         MiniIot_LOG_LN(F("[Ethernet] 开始获取IP..."));
         if (Ethernet.begin(mac) == 0)
         {
@@ -172,15 +181,6 @@ public:
         // 初始化Ethernet板子
         pinMode(MiniIot_ETH_RST, OUTPUT);
         Ethernet.init(SS);
-        digitalWrite(MiniIot_ETH_RST, HIGH);
-        delay(200);
-        digitalWrite(MiniIot_ETH_RST, LOW);
-        delay(200);
-        digitalWrite(MiniIot_ETH_RST, HIGH);
-        delay(200);
-
-        MiniIot_LOG_LN(F("[Ethernet] 初始化Ethernet模块"));
-        this->begin();
     }
 
     // 连接网络（LED常量）
