@@ -1,7 +1,7 @@
 #pragma once
 
 // MiniIot库文件版本
-#define MiniIot_VERSION "miniiot_v2.2.0_250823"
+#define MiniIot_VERSION "miniiot_v2.2.1_250823"
 
 #ifndef APP_VERSION
     #define APP_VERSION "0.0.1"
@@ -27,7 +27,7 @@
 -   优化：优化wifi配置，LittleFS 初始化失败时，使用默认配置。
 -   新增：ESP8266、ESP32C3、ESP32S3已适配w5500以太网模块。ESP32C3 Flash大小为4MB时，Partition Scheme需要选择【No OTA (2MB APP/2MB SPIFFS)】
 
-=======v2.2.0_250823=======
+=======v2.2.1_250823=======
 -   优化：调整以太网初始化位置。
 -   修复：调整以太网mac地址生成方式，避免全为数字时，部分路由器无法分配IP地址的问题。
 */
