@@ -1,7 +1,9 @@
 // 登录控制台与查看文档请访问官网：http://www.miniiot.top
 
+// 此例程适用于esp8266与esp32。
+
 // 当前程序版本（仅用于后台展示）
-#define APP_VERSION "basis_2511071330"
+#define APP_VERSION "wifi_2511081817"
 
 // 默认WIFI配置（出厂设置）
 #define DEFAULT_WIFI_SSID "miniiot.top"
@@ -9,8 +11,6 @@
 
 // 打印日志（建议调试完成后注释掉）
 #define MiniIot_DEBUG_LOG
-// 自定义日志输出串口
-#define MiniIotDebugSerial Serial
 
 // 导入miniiot
 #include <MiniIot.h>
@@ -54,7 +54,7 @@ void setup()
 
     // 使用产品密钥初始化MiniIot，（产品ID，产品密钥）
     // 设备不存在会自动注册添加设备
-    MiniIot.begin("ZnnQmFTH", "h5Tmn1l3m2S9DY2I");
+    MiniIot.begin("OWO56Olq", "C2EsALWiPYwd4sAd");
 
     // 使用设备密钥初始化MiniIot，（产品ID，设备ID，设备密钥）
     // 必须先在平台上添加设备

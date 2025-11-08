@@ -1,7 +1,10 @@
 // 登录控制台与查看文档请访问官网：http://www.miniiot.top
 
+// 此例程适用于esp8266与esp32。
+// stm32f1请参考例程：STM32_RTOS
+
 // 当前程序版本（仅用于后台展示）
-#define APP_VERSION "w5500_2511071328"
+#define APP_VERSION "w5500_2511081756"
 
 // 使用W5500以太网模块
 #define MiniIot_USE_ETH
@@ -12,9 +15,9 @@
 // #ifdef ESP32
 //     #define MiniIot_ETH_RST 2
 // #endif
-// #ifdef STM32F1
-//     #define MiniIot_ETH_RST PE9
-// #endif
+
+// 打印日志（建议调试完成后注释掉）
+#define MiniIot_DEBUG_LOG
 
 // 使用以太网模块时通过心跳判断网络状态
 // MQTT心跳间隔（秒）
@@ -62,6 +65,8 @@ void ServiceCallbackFunction(JsonObject dataObj)
 void setup()
 {
     Serial.begin(115200);
+    Serial.println();
+    Serial.println();
 
     // 使用产品密钥初始化MiniIot，（产品ID，产品密钥）
     // 设备不存在会自动注册添加设备

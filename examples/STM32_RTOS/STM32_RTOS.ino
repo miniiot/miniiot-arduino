@@ -1,7 +1,7 @@
 #include <STM32FreeRTOS.h>
 
 // 当前程序版本（仅用于后台展示）
-#define APP_VERSION "STM32_RTOS_2511080029"
+#define APP_VERSION "STM32_RTOS_2511081753"
 
 // 使用W5500以太网模块
 #define MiniIot_USE_ETH
@@ -12,12 +12,6 @@
 
 // 打印日志（建议调试完成后注释掉）
 #define MiniIot_DEBUG_LOG
-
-// HardwareSerial DebugSerial(PA10, PA9); // 串口1
-HardwareSerial Serial2(PA3, PA2);	   // 串口2
-// HardwareSerial Serial3(PB11, PB10);  // 串口3
-// HardwareSerial Serial4(PC11, PC10);	   // 串口4
-// HardwareSerial Serial5(PD2, PC12);	   // 串口5
 
 // 自定义日志输出串口
 #define MiniIotDebugSerial Serial2

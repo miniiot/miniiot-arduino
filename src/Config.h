@@ -1,7 +1,7 @@
 #pragma once
 
 // MiniIot库文件版本
-#define MiniIot_VERSION "miniiot_v2.3.1_251107"
+#define MiniIot_VERSION "miniiot_v2.3.2_251108"
 
 #ifndef APP_VERSION
     #define APP_VERSION "0.0.1"
@@ -35,6 +35,9 @@
 -   新增：兼容STM32F1平台。
 -   优化：修改以太网模块默认复位控制IO。
 -   优化：可自定义打印日志的串口。#define MiniIotDebugSerial Serial
+
+=======v2.3.2_251108=======
+-   修复：调整依赖库。
 */
 
 // MiniIot状态指示灯IO
