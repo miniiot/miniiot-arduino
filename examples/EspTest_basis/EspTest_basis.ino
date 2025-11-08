@@ -1,14 +1,16 @@
 // 登录控制台与查看文档请访问官网：http://www.miniiot.top
 
 // 当前程序版本（仅用于后台展示）
-#define APP_VERSION "basis_2507301626"
+#define APP_VERSION "basis_2511071330"
 
 // 默认WIFI配置（出厂设置）
-#define DEFAULT_WIFI_SSID "Tenda_375160章"
-#define DEFAULT_WIFI_PASSWORD "87472998"
+#define DEFAULT_WIFI_SSID "miniiot.top"
+#define DEFAULT_WIFI_PASSWORD "88888888"
 
 // 打印日志（建议调试完成后注释掉）
 #define MiniIot_DEBUG_LOG
+// 自定义日志输出串口
+#define MiniIotDebugSerial Serial
 
 // 导入miniiot
 #include <MiniIot.h>

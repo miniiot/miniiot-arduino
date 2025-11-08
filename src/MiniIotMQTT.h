@@ -190,10 +190,9 @@ public:
         }
     }
 
-    // 连接MQTT服务器（LED慢闪）
+    // 连接MQTT服务器
     bool mqttConnect(String mac)
     {
-
         // 判断MiniIot_MQTT_HOST是否是域名还是ip地址
         #ifdef MiniIot_MQTT_HOST_IS_IP
             const String mqttHost = MiniIot_MQTT_HOST; // MQTT服务器地址，直接使用IP地址
@@ -212,11 +211,6 @@ public:
         MqttClient.setServer(mqttHost.c_str(), MiniIot_MQTT_PORT);
         MqttClient.setCallback(MiniIotMessage::handleMessage);
 
-        
-        #ifdef MiniIot_STATE_LED
-            digitalWrite(MiniIot_STATE_LED, 1);
-        #endif
-            
         this->MqttUser = this->ProductId + ";" + this->DeviceId + ";" + mac + ";" + this->SecretType + ";1;" + this->getNowDateTime() + ";" + this->BinInfo;
         this->MqttPassword = MiniIotUtils::ESPsha1(this->MqttUser + ";天才小坑Bi-<admin@dgwht.com>;" + this->Secret);
 
@@ -225,14 +219,11 @@ public:
         {
             MiniIot_LOG_LN(F("[MQTT] MQTT连接成功"));
             this->mqttSubscribe();// 订阅主题
+            
             return true; // 连接成功
         }
         MiniIot_LOG(F("[MQTT] MQTT连接失败："));
         MiniIot_LOG_LN(this->getMqttErrCodeMsg(MqttClient.state()));
-        
-        #ifdef MiniIot_STATE_LED
-            digitalWrite(MiniIot_STATE_LED, 0);
-        #endif
         
         return false; // 连接失败
     }

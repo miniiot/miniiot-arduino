@@ -8,6 +8,10 @@ ESP8266WebServer adminWebServer(MiniIot_ADMIN_SERVICE_PORT);
 WebServer adminWebServer(MiniIot_ADMIN_SERVICE_PORT);
 #endif
 
+#ifdef STM32F1
+EthernetWebServer adminWebServer(MiniIot_ADMIN_SERVICE_PORT);
+#endif
+
 class MiniIotAdminWebServer
 {
 private:

@@ -1,16 +1,24 @@
 // 登录控制台与查看文档请访问官网：http://www.miniiot.top
 
 // 当前程序版本（仅用于后台展示）
-#define APP_VERSION "all_2507301626"
+#define APP_VERSION "all_2511071332"
 
 // 默认WIFI配置（出厂设置）
-#define DEFAULT_WIFI_SSID "Tenda_375160章"
-#define DEFAULT_WIFI_PASSWORD "87472998"
+#define DEFAULT_WIFI_SSID "miniiot.top"
+#define DEFAULT_WIFI_PASSWORD "88888888"
 
 // 使用W5500以太网模块
 // #define MiniIot_USE_ETH
-// W5500以太网模块复位控制IO（默认io4）
-// #define MiniIot_ETH_RST 4
+// W5500以太网模块复位控制IO
+// #ifdef ESP8266
+//     #define MiniIot_ETH_RST 5
+// #endif
+// #ifdef ESP32
+//     #define MiniIot_ETH_RST 2
+// #endif
+// #ifdef STM32F1
+//     #define MiniIot_ETH_RST PE9
+// #endif
 
 // MQTT心跳间隔（秒）
 // #define MiniIot_MQTT_KeepAlive 5
@@ -25,6 +33,8 @@
 
 // 打印日志（建议调试完成后注释掉）
 #define MiniIot_DEBUG_LOG
+// 自定义日志输出串口
+#define MiniIotDebugSerial Serial
 
 // 状态指示灯(低电平亮，esp8266默认io2的板载led，esp32无默认)
 // #define MiniIot_STATE_LED 2

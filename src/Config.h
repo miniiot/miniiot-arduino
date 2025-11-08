@@ -1,7 +1,7 @@
 #pragma once
 
 // MiniIot库文件版本
-#define MiniIot_VERSION "miniiot_v2.2.1_250823"
+#define MiniIot_VERSION "miniiot_v2.3.1_251107"
 
 #ifndef APP_VERSION
     #define APP_VERSION "0.0.1"
@@ -30,6 +30,11 @@
 =======v2.2.1_250823=======
 -   优化：调整以太网初始化位置。
 -   修复：调整以太网mac地址生成方式，避免全为数字时，部分路由器无法分配IP地址的问题。
+
+=======v2.3.1_251107=======
+-   新增：兼容STM32F1平台。
+-   优化：修改以太网模块默认复位控制IO。
+-   优化：可自定义打印日志的串口。#define MiniIotDebugSerial Serial
 */
 
 // MiniIot状态指示灯IO
@@ -51,7 +56,6 @@
 #define MINIIOT_WORK_STATE_WORKING 103
 #define MINIIOT_WORK_STATE_SERVER_ERROR 104
 #define MINIIOT_WORK_STATE_NETWORK_ERROR 105
-
 
 // HTTP域名
 #ifndef MiniIot_HTTP_HOST
@@ -77,7 +81,15 @@
 
 // 以太网模块复位控制IO
 #ifndef MiniIot_ETH_RST
-    #define MiniIot_ETH_RST 4
+    #ifdef ESP8266
+        #define MiniIot_ETH_RST 5
+    #endif
+    #ifdef ESP32
+        #define MiniIot_ETH_RST 2
+    #endif
+    #ifdef STM32F1
+        #define MiniIot_ETH_RST PE9
+    #endif
 #endif
 
 // 默认使用MQTT客户端
@@ -98,8 +110,11 @@
 
 // 日志打印
 #ifdef MiniIot_DEBUG_LOG
-    #define MiniIot_LOG(message) Serial.print(message)
-    #define MiniIot_LOG_LN(message) Serial.println(message)
+    #ifndef MiniIotDebugSerial
+        #define MiniIotDebugSerial Serial
+    #endif
+    #define MiniIot_LOG(message) MiniIotDebugSerial.print(message)
+    #define MiniIot_LOG_LN(message) MiniIotDebugSerial.println(message)
 #else
     #define MiniIot_LOG(message)
     #define MiniIot_LOG_LN(message)

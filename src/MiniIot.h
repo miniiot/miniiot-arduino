@@ -1,55 +1,64 @@
 #pragma once
 #include <Arduino.h>
 #include <ArduinoJson.h>
+
+#ifndef STM32F1
 #include <LittleFS.h>
+#endif
+
 #include <sstream>
 #include <Arduino_JSON.h>
 
 #include "Config.h"
 #include "Core/MiniIotUtils.h"
 
+#ifdef STM32F1
+#include "stm32f1xx_hal.h"
+#endif
+
 // wifi设备
 #ifdef __UseWifiClient__
-    #ifdef ESP8266
-        #include <ESP8266WiFi.h>
-    #endif
+#ifdef ESP8266
+#include <ESP8266WiFi.h>
+#endif
 
-    #ifdef ESP32
-        #include <WiFi.h>
-    #endif
+#ifdef ESP32
+#include <WiFi.h>
+#endif
 
-    #include "Core/MiniIotWifi.h"
-    MiniIotWifi MiniIotWifiObj;
+#include "Core/MiniIotWifi.h"
+MiniIotWifi MiniIotWifiObj;
 
-    WiFiClient MiniIotNetworkClient;
+WiFiClient MiniIotNetworkClient;
 
-    #include "Core/MiniIotOTA.h"
+#include "Core/MiniIotOTA.h"
 #endif
 
 // 网口设备
 #ifdef __UseEthernetClient__
-    #include "Core/MiniIotEthernet.h"
-    MiniIotEthernet MiniIotEthernetObj;
+#include "Core/MiniIotEthernet.h"
+MiniIotEthernet MiniIotEthernetObj;
 
-    #include <EthernetClient.h>
-    EthernetClient MiniIotNetworkClient;
+#include <EthernetClient.h>
+EthernetClient MiniIotNetworkClient;
 #endif
-
 
 // 消息处理
 #include "MiniIotMessage.h"
 
 // 使用mqtt客户端
 #ifdef __UseMqttClient__
-    #include "MiniIotMQTT.h"
-    MiniIotMQTT MiniIotClient(MiniIotNetworkClient);
+#include "MiniIotMQTT.h"
+MiniIotMQTT MiniIotClient(MiniIotNetworkClient);
 #endif
 
 // 使用管理后台
 #ifdef __UseAdminService__
-    #include "Core/MiniIotAP.h"
-    #include "Core/MiniIotAdminWebServer.h"
-    MiniIotAdminWebServer MiniIotAdminWebServerClient;
+#ifndef STM32F1
+#include "Core/MiniIotAP.h"
+#endif
+#include "Core/MiniIotAdminWebServer.h"
+MiniIotAdminWebServer MiniIotAdminWebServerClient;
 #endif
 
 // 核心类
@@ -58,16 +67,35 @@ class MiniIot
 private:
     int workstate = MINIIOT_WORK_STATE_INIT; // 主进程工作状态
 
-    int serverErrNum = 0; // 服务器重连次数
+    int serverErrNum = 0;           // 服务器重连次数
     int serverReconnectTime = 2000; // mqtt重连间隔
     uint32_t serverConnectTime = 0; // mqtt连接时间
+
+    int ledUpdateTime = -1; // led闪烁间隔
+    uint32_t ledLastUpdateTime = 0;
 
     String ProductId;
     String DeviceId;
 
+    // 指示灯更新
+    void updateLed(){
+#ifdef MiniIot_STATE_LED
+        if(this->ledUpdateTime == 0){
+            digitalWrite(MiniIot_STATE_LED, 0);
+        }else if(this->ledUpdateTime == -1){
+            digitalWrite(MiniIot_STATE_LED, 1);
+        }else if (millis() - this->ledLastUpdateTime > this->ledUpdateTime)
+        {
+            this->ledLastUpdateTime = millis();
+            digitalWrite(MiniIot_STATE_LED, !digitalRead(MiniIot_STATE_LED));
+        }
+#endif
+    }
+
     // 文件系统初始化
     void FS_Init()
     {
+#ifndef STM32F1
 #ifdef ESP32
         if (!LittleFS.begin(true))
 #else
@@ -88,13 +116,16 @@ private:
         }
 
         LittleFS.end();
+#endif
     }
 
     // 管理系统初始化
     void init_admin_web_server()
     {
 #ifdef __UseAdminService__
+#ifndef STM32F1
         MiniIotAP MiniIotAP(this->DeviceId);
+#endif
         MiniIotAdminWebServerClient.init(MiniIotMessage::SysCallBack);
 #endif
     }
@@ -102,17 +133,17 @@ private:
     void init()
     {
         // 指示灯初始化（低电平亮）
-        
-        #ifdef MiniIot_STATE_LED
-            pinMode(MiniIot_STATE_LED, OUTPUT);
-            digitalWrite(MiniIot_STATE_LED, 1);
-        #endif
+
+#ifdef MiniIot_STATE_LED
+        pinMode(MiniIot_STATE_LED, OUTPUT);
+        digitalWrite(MiniIot_STATE_LED, 1);
+#endif
 
         MiniIotMessage::attachSysCallback(SysCallBack);
 
-        #ifdef __UseEthernetClient__
+#ifdef __UseEthernetClient__
         MiniIotEthernetObj.init();
-        #endif
+#endif
 
         this->init_admin_web_server(); // 管理系统初始化
     }
@@ -125,36 +156,45 @@ private:
         {
             // 修改wifi
             MiniIot_LOG_LN(F("[SYSTEM] 修改wifi"));
-            #ifdef __UseWifiClient__
-                MiniIotWifiObj.update(dataObj["serviceParams"]["ssid"].as<String>(), dataObj["serviceParams"]["password"].as<String>());
-                MiniIotClient.disconnect();
-                ESP.restart();
-            #endif
+#ifdef __UseWifiClient__
+            MiniIotWifiObj.update(dataObj["serviceParams"]["ssid"].as<String>(), dataObj["serviceParams"]["password"].as<String>());
+            MiniIotClient.disconnect();
+            ESP.restart();
+#endif
         }
         else if (serviceName == "miniiot_ota_update")
         {
             // OTA升级
             MiniIot_LOG_LN(F("[SYSTEM] OTA升级"));
-            #ifdef __UseWifiClient__
-                MiniIotOTA MiniIotOtaObj;
-                MiniIotOtaObj.updateBin(dataObj["serviceParams"]["url"].as<String>());
-            #endif
+#ifdef __UseWifiClient__
+            MiniIotOTA MiniIotOtaObj;
+            MiniIotOtaObj.updateBin(dataObj["serviceParams"]["url"].as<String>());
+#endif
         }
         else if (serviceName == "miniiot_admin_update")
         {
             // 更新管理后台账号密码
             MiniIot_LOG_LN(F("[ADMIN] 更新账号密码"));
-            #ifdef __UseAdminService__
-                MiniIotAdminWebServerClient.setUsername(dataObj["serviceParams"]["username"].as<String>());
-                MiniIotAdminWebServerClient.setPassword(dataObj["serviceParams"]["password"].as<String>());
-            #endif
+#ifdef __UseAdminService__
+            MiniIotAdminWebServerClient.setUsername(dataObj["serviceParams"]["username"].as<String>());
+            MiniIotAdminWebServerClient.setPassword(dataObj["serviceParams"]["password"].as<String>());
+#endif
         }
         else if (serviceName == "miniiot_reboot")
         {
             // 重启
             MiniIot_LOG_LN(F("[SYSTEM] 重启"));
             MiniIotClient.disconnect();
+
+#ifdef ESP8266
+            ESP.reset();
+#endif
+#ifdef ESP32
             ESP.restart();
+#endif
+#ifdef STM32F1
+            NVIC_SystemReset();
+#endif
         }
         else
         {
@@ -166,14 +206,18 @@ public:
     // 初始化(设备秘钥认证,2)
     void begin(String ProductId_, String DeviceId_, String Secret_)
     {
-        Serial.println();
-        Serial.println();
-        Serial.print(F("开发板型号: "));
-        Serial.println(ARDUINO_BOARD);
-        Serial.println("[MiniIot] 库版本：" + (String)MiniIot_VERSION);
-        Serial.println("[MiniIot] 程序版本：" + (String)APP_VERSION);
-        Serial.println("[MiniIot] 产品ID：" + ProductId_);
-        Serial.println("[MiniIot] 设备ID：" + DeviceId_);
+        MiniIot_LOG_LN();
+        MiniIot_LOG_LN();
+
+#ifndef STM32F1
+        MiniIot_LOG(F("开发板型号: "));
+        MiniIot_LOG_LN(ARDUINO_BOARD);
+#endif
+
+        MiniIot_LOG_LN("[MiniIot] 库版本：" + (String)MiniIot_VERSION);
+        MiniIot_LOG_LN("[MiniIot] 程序版本：" + (String)APP_VERSION);
+        MiniIot_LOG_LN("[MiniIot] 产品ID：" + ProductId_);
+        MiniIot_LOG_LN("[MiniIot] 设备ID：" + DeviceId_);
 
         this->ProductId = ProductId_;
         this->DeviceId = DeviceId_;
@@ -188,14 +232,18 @@ public:
         // 获取芯片唯一ID
         String DeviceId_ = "A" + MiniIotUtils::ESPsha1(MiniIotUtils::ESPchipId()).substring(0, 9);
 
-        Serial.println();
-        Serial.println();
-        Serial.print(F("开发板型号: "));
-        Serial.println(ARDUINO_BOARD);
-        Serial.println("[MiniIot] 库版本：" + (String)MiniIot_VERSION);
-        Serial.println("[MiniIot] 程序版本：" + (String)APP_VERSION);
-        Serial.println("[MiniIot] 产品ID：" + ProductId_);
-        Serial.println("[MiniIot] 设备ID：" + DeviceId_);
+        MiniIot_LOG_LN();
+        MiniIot_LOG_LN();
+
+#ifndef STM32F1
+        MiniIot_LOG(F("开发板型号: "));
+        MiniIot_LOG_LN(ARDUINO_BOARD);
+#endif
+
+        MiniIot_LOG_LN("[MiniIot] 库版本：" + (String)MiniIot_VERSION);
+        MiniIot_LOG_LN("[MiniIot] 程序版本：" + (String)APP_VERSION);
+        MiniIot_LOG_LN("[MiniIot] 产品ID：" + ProductId_);
+        MiniIot_LOG_LN("[MiniIot] 设备ID：" + DeviceId_);
 
         this->ProductId = ProductId_;
         this->DeviceId = DeviceId_;
@@ -218,12 +266,15 @@ public:
     {
         this->FS_Init();
         MiniIot_LOG_LN(F("[SYSTEM] 已恢复出厂设置，开始重启\n"));
-        #ifdef ESP8266
-            ESP.reset();
-        #endif
-        #ifdef ESP32
-            ESP.restart();
-        #endif
+#ifdef ESP8266
+        ESP.reset();
+#endif
+#ifdef ESP32
+        ESP.restart();
+#endif
+#ifdef STM32F1
+        NVIC_SystemReset();
+#endif
     }
 
     // 获取运行状态
@@ -261,7 +312,7 @@ public:
     {
         this->propertyPost(property_name, (String)property_value);
     }
-    
+
     void propertyPost(String property_name, String property_value)
     {
         static std::stringstream postData;
@@ -283,7 +334,7 @@ public:
 
         MiniIotClient.propertyPost(postData.str().c_str());
     }
-    
+
     // 属性批量上报，所有的key+value之和不要超过40个字符
     void propertyPost(JSONVar dataObj)
     {
@@ -302,10 +353,12 @@ public:
         postData << "\"params\" : {";
 
         JSONVar keys = dataObj.keys();
-        for (int i = 0; i < keys.length(); i++) {
+        for (int i = 0; i < keys.length(); i++)
+        {
             String value = dataObj[keys[i]];
             postData << "\"" << ((String)keys[i]).c_str() << "\" : {\"value\" : \"" << ((String)value).c_str() << "\"}";
-            if(i!= keys.length() - 1) {
+            if (i != keys.length() - 1)
+            {
                 postData << ", ";
             }
         }
@@ -343,9 +396,11 @@ public:
 // 主进程
 void MiniIot::loop()
 {
-    #ifdef __UseAdminService__
-        MiniIotAdminWebServerClient.loop();
-    #endif
+    this->updateLed();
+
+#ifdef __UseAdminService__
+    MiniIotAdminWebServerClient.loop();
+#endif
 
     switch (this->workstate)
     {
@@ -354,85 +409,89 @@ void MiniIot::loop()
         break;
 
     case MINIIOT_WORK_STATE_NETWORK_CONNECTING: // 网络连接
-        #ifdef __UseWifiClient__
+        this->ledUpdateTime = 1000; // LED闪烁间隔
+#ifdef __UseWifiClient__
         if (MiniIotWifiObj.wifiConnect() == true)
-        #endif
-        #ifdef __UseEthernetClient__
-        if (MiniIotEthernetObj.connect() == true)
-        #endif
-        {
-            this->serverReconnectTime = 1000*2;
-            this->serverErrNum = 0;
+#endif
+#ifdef __UseEthernetClient__
+            if (MiniIotEthernetObj.connect() == true)
+#endif
+            {
+                this->serverReconnectTime = 1000 * 2;
+                this->serverErrNum = 0;
 
-            this->workstate = MINIIOT_WORK_STATE_SERVER_CONNECTING; // 下一步，服务器连接
-        }
-        else
-        {
-            this->workstate = MINIIOT_WORK_STATE_NETWORK_ERROR; // 下一步，网络连接错误或断开
-        }
+                this->workstate = MINIIOT_WORK_STATE_SERVER_CONNECTING; // 下一步，服务器连接
+            }
+            else
+            {
+                this->workstate = MINIIOT_WORK_STATE_NETWORK_ERROR; // 下一步，网络连接错误或断开
+            }
         break;
 
     case MINIIOT_WORK_STATE_SERVER_CONNECTING: // 服务器连接
-        #ifdef __UseWifiClient__
+        this->ledUpdateTime = 500; // LED闪烁间隔
+#ifdef __UseWifiClient__
         if (MiniIotClient.mqttConnect(MiniIotWifiObj.getWifiMac()) == true)
-        #endif
-        
-        #ifdef __UseEthernetClient__
-        if (MiniIotClient.mqttConnect(MiniIotEthernetObj.getMac()) == true)
-        #endif
-        {
-            this->serverErrNum = 0;
-            this->workstate = MINIIOT_WORK_STATE_WORKING; // 下一步，工作中
-        }
-        else
-        {
-            this->serverErrNum++;
-            this->workstate = MINIIOT_WORK_STATE_SERVER_ERROR; // 下一步，服务器连接错误或断开
-        }
+#endif
+
+#ifdef __UseEthernetClient__
+            if (MiniIotClient.mqttConnect(MiniIotEthernetObj.getMac()) == true)
+#endif
+            {
+                this->serverErrNum = 0;
+                this->workstate = MINIIOT_WORK_STATE_WORKING; // 下一步，工作中
+            }
+            else
+            {
+                this->serverErrNum++;
+                this->workstate = MINIIOT_WORK_STATE_SERVER_ERROR; // 下一步，服务器连接错误或断开
+            }
         break;
 
     case MINIIOT_WORK_STATE_WORKING: // 工作中，随时监测状态
+        this->ledUpdateTime = -1; // LED闪烁间隔
         MiniIotClient.loop();
 
         if (!MiniIotClient.connected())
         {
-            #ifdef __UseWifiClient__
+#ifdef __UseWifiClient__
             if (MiniIotWifiObj.getStatus() != WL_CONNECTED)
-            #endif
-            #ifdef __UseEthernetClient__
-            if (MiniIotEthernetObj.getStatus() != 1)
-            #endif
-            {
-                this->workstate = MINIIOT_WORK_STATE_NETWORK_ERROR; // 下一步，网络连接错误或断开
-            }
-            else
-            {
-                this->workstate = MINIIOT_WORK_STATE_SERVER_ERROR; // 下一步，服务器连接错误或断开
-            }
+#endif
+#ifdef __UseEthernetClient__
+                if (MiniIotEthernetObj.getStatus() != 1)
+#endif
+                {
+                    this->workstate = MINIIOT_WORK_STATE_NETWORK_ERROR; // 下一步，网络连接错误或断开
+                }
+                else
+                {
+                    this->workstate = MINIIOT_WORK_STATE_SERVER_ERROR; // 下一步，服务器连接错误或断开
+                }
         }
         break;
 
     case MINIIOT_WORK_STATE_SERVER_ERROR: // 服务器连接错误或断开
         if (this->serverErrNum > 5)
         {
-            this->serverReconnectTime = 1000*30; // 30秒后重试
+            this->serverReconnectTime = 1000 * 30; // 30秒后重试
         }
 
-        if((millis() - this->serverConnectTime) > this->serverReconnectTime){
+        if ((millis() - this->serverConnectTime) > this->serverReconnectTime)
+        {
             this->workstate = MINIIOT_WORK_STATE_SERVER_CONNECTING; // 下一步，服务器连接
             this->serverConnectTime = millis();
         }
-        
-        #ifdef __UseWifiClient__
+
+#ifdef __UseWifiClient__
         if (MiniIotWifiObj.getStatus() != WL_CONNECTED)
-        #endif
-        
-        #ifdef __UseEthernetClient__
-        if (MiniIotEthernetObj.getStatus() != 1)
-        #endif
-        {
-            this->workstate = MINIIOT_WORK_STATE_NETWORK_ERROR; // 下一步，网络连接错误或断开
-        }
+#endif
+
+#ifdef __UseEthernetClient__
+            if (MiniIotEthernetObj.getStatus() != 1)
+#endif
+            {
+                this->workstate = MINIIOT_WORK_STATE_NETWORK_ERROR; // 下一步，网络连接错误或断开
+            }
         break;
 
     case MINIIOT_WORK_STATE_NETWORK_ERROR:                       // 网络连接错误或断开

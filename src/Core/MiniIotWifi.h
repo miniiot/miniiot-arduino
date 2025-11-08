@@ -140,19 +140,14 @@ public:
         if(this->connect_time == 0){
             this->connect_time = millis();
             this->loadConfig();
-            yield();
+
             WiFi.begin(this->WifiSsid.c_str(), this->WifiPasswd.c_str());
             MiniIot_LOG(F("[WIFI] WIFI连接中"));
         }
-        yield();
 
         if(this->connect_led_time == 0){
             this->connect_led_time = millis();
             MiniIot_LOG(".");
-            
-            #ifdef MiniIot_STATE_LED
-                digitalWrite(MiniIot_STATE_LED, !digitalRead(MiniIot_STATE_LED));
-            #endif
         }
 
         if(WiFi.status() != WL_CONNECTED)

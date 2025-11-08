@@ -1,6 +1,6 @@
 #pragma once
 #include <ArduinoJson.h>
-#include <LittleFS.h>
+// #include <LittleFS.h>
 
 #include <SPI.h>
 #include <Ethernet.h>
@@ -15,7 +15,6 @@ class MiniIotEthernet
 private:
     uint32_t init_time = 0;
     uint32_t connect_time = 0;
-    uint32_t connect_led_time = 0;
 
     String configName = "/ethernetConfig.json";
     // String jsonData = "{\"ssid\":\"miniiot.top\",\"passwd\":\"88888888\"}";
@@ -27,20 +26,20 @@ private:
     String mac;
 
     // 初始化 LittleFS
-    bool initializeLittleFS()
-    {
-#ifdef ESP32
-        if (!LittleFS.begin(true))
-#else
-        if (!LittleFS.begin())
-#endif
-        {
-            MiniIot_LOG_LN(F("[WIFI] LittleFS 初始化失败"));
-            return false;
-        }
+//     bool initializeLittleFS()
+//     {
+// #ifdef ESP32
+//         if (!LittleFS.begin(true))
+// #else
+//         if (!LittleFS.begin())
+// #endif
+//         {
+//             MiniIot_LOG_LN(F("[WIFI] LittleFS 初始化失败"));
+//             return false;
+//         }
 
-        return true;
-    }
+//         return true;
+//     }
 
     // 读取本地wifi信息
     // bool loadConfig()
@@ -136,6 +135,19 @@ private:
         }
 
         MiniIot_LOG_LN(F("[Ethernet] 网线已连接"));
+        
+        return true;
+    }
+
+    // 手动解析 MAC 字符串（格式：AA:BB:CC:DD:EE:FF）
+    bool parseMac(String str, byte* outMac) {
+        if (str.length() != 17) return false;  // 长度校验
+        for (int i = 0; i < 6; i++) {
+            // 提取每个字节的两位十六进制字符（跳过冒号）
+            String hexByte = str.substring(i*3, i*3 + 2);
+            // 转换为字节（16进制转10进制）
+            outMac[i] = (byte)strtol(hexByte.c_str(), NULL, 16);
+        }
         return true;
     }
 
@@ -143,7 +155,10 @@ private:
         String macStr = MiniIotUtils::getMacByChipId();
         this->mac = macStr;
         byte mac[6];
-        sscanf(macStr.c_str(), "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx", &mac[0], &mac[1], &mac[2], &mac[3], &mac[4], &mac[5]);
+        if (!this->parseMac(macStr, mac)) {
+            MiniIot_LOG_LN(macStr);
+            MiniIot_LOG_LN("MAC格式错误！");
+        }
         
         IPAddress ip(192, 168, 0, 29);
         IPAddress myDns(119, 29, 29, 29);
@@ -151,12 +166,7 @@ private:
         MiniIot_LOG_LN();
         MiniIot_LOG_LN(F("[Ethernet] 初始化Ethernet模块"));
 
-        digitalWrite(MiniIot_ETH_RST, HIGH);
-        delay(200);
-        digitalWrite(MiniIot_ETH_RST, LOW);
-        delay(200);
-        digitalWrite(MiniIot_ETH_RST, HIGH);
-        delay(200);
+        this->restart();
 
         MiniIot_LOG_LN(F("[Ethernet] 开始获取IP..."));
         if (Ethernet.begin(mac) == 0)
@@ -181,22 +191,16 @@ public:
         Ethernet.init(SS);
     }
 
-    // 连接网络（LED常量）
+    void restart(){
+        digitalWrite(MiniIot_ETH_RST, LOW);
+        delay(200);
+        digitalWrite(MiniIot_ETH_RST, HIGH);
+        delay(200);
+    }
+
+    // 连接网络
     bool connect()
     {
-        if(this->connect_led_time == 0){
-            this->connect_led_time = millis();
-            #ifdef MiniIot_STATE_LED
-                digitalWrite(MiniIot_STATE_LED, !digitalRead(MiniIot_STATE_LED));
-            #endif
-        }
-        
-        // 1s刷新一次LED
-        if(millis() - this->connect_led_time >= 1000){
-            this->connect_led_time = 0;
-        }
-
-        
         if(this->connect_time == 0){
             this->connect_time = millis();
             if(this->status()){
@@ -239,25 +243,25 @@ public:
     }
 
     // 清除配置信息
-    void clear()
-    {
-        if (!initializeLittleFS())
-        {
-            return;
-        }
+    // void clear()
+    // {
+    //     if (!initializeLittleFS())
+    //     {
+    //         return;
+    //     }
 
-        if (LittleFS.remove(this->configName))
-        {
-            MiniIot_LOG(F("[Ethernet] 配置清除成功："));
-        }
-        else
-        {
-            MiniIot_LOG(F("[Ethernet] 配置清除失败："));
-        }
-        MiniIot_LOG_LN(this->configName);
+    //     if (LittleFS.remove(this->configName))
+    //     {
+    //         MiniIot_LOG(F("[Ethernet] 配置清除成功："));
+    //     }
+    //     else
+    //     {
+    //         MiniIot_LOG(F("[Ethernet] 配置清除失败："));
+    //     }
+    //     MiniIot_LOG_LN(this->configName);
 
-        LittleFS.end();
-    }
+    //     LittleFS.end();
+    // }
 
     // 更新配置
     // void update(String wifiName, String wifiPassword)

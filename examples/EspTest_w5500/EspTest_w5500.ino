@@ -1,12 +1,20 @@
 // 登录控制台与查看文档请访问官网：http://www.miniiot.top
 
 // 当前程序版本（仅用于后台展示）
-#define APP_VERSION "w5500_2507301626"
+#define APP_VERSION "w5500_2511071328"
 
 // 使用W5500以太网模块
 #define MiniIot_USE_ETH
-// W5500以太网模块复位控制IO（默认io4）
-#define MiniIot_ETH_RST 4
+// W5500以太网模块复位控制IO
+// #ifdef ESP8266
+//     #define MiniIot_ETH_RST 5
+// #endif
+// #ifdef ESP32
+//     #define MiniIot_ETH_RST 2
+// #endif
+// #ifdef STM32F1
+//     #define MiniIot_ETH_RST PE9
+// #endif
 
 // 使用以太网模块时通过心跳判断网络状态
 // MQTT心跳间隔（秒）
