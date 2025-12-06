@@ -28,17 +28,7 @@
 class MiniIotMQTT
 {
 private:
-    String Version; // 业务程序版本号
-    const String BinInfo = "{\"MiniIot_Version\":\"" + (String)MiniIot_VERSION + "\",\"App_Version\":\"" + (String)APP_VERSION + "\"}"; // 固件信息
-
-    String ProductId;  // 产品ID
-    String DeviceId;   // 设备ID
-    String Secret;     // 密钥
-    String SecretType; // 密钥类型
-
-    String MqttUser;
-    String MqttPassword;
-
+    MiniIotSystemInfo_t *SystemInfo;
     PubSubClient MqttClient;
 
 #ifdef __UseWifiClient__
@@ -48,8 +38,33 @@ private:
     EthernetClient MiniIotNetworkClient;
 #endif
 
+    // 解析时间
+    bool parseDateTime(String html, String *retData){
+        MiniIot_LOG(F("[MQTT] "));
+        MiniIot_LOG_LN(html);
+
+        DynamicJsonDocument JSON_Buffer(html.length() + 20);
+        if (deserializeJson(JSON_Buffer, html))
+        {
+            MiniIot_LOG_LN(F("[MQTT] 时间解析错误"));
+            return false;
+        }
+
+        JsonObject jsonData = JSON_Buffer.as<JsonObject>();
+        if (!jsonData.containsKey("date_time") || !jsonData.containsKey("rand"))
+        {
+            MiniIot_LOG_LN(F("[MQTT] 时间解析错误，JSON缺少必要字段"));
+            return false;
+        }
+
+        String str = jsonData["date_time"].as<String>() + ";" + jsonData["rand"].as<String>();
+        MiniIot_LOG_LN("[MQTT] 当前时间: " + str);
+        *retData = str;
+        return true;
+    }
+
     // 获取网络时间
-    String getNowDateTime()
+    bool getNowDateTime(String *retData)
     {
 
 #ifdef __UseWifiClient__
@@ -59,7 +74,7 @@ private:
         if (!httpClient.begin(this->MiniIotNetworkClient, url))
         {
             MiniIot_LOG_LN(F("[MQTT] 时间获取失败，HTTP连接失败"));
-            return "2022-07-07 00:00:00;9527";
+            return false;
         }
 
         int httpCode = httpClient.GET();
@@ -67,7 +82,7 @@ private:
         {
             httpClient.end();
             MiniIot_LOG_LN("[MQTT] 时间获取失败，HTTP代码: " + String(httpCode));
-            return "2022-07-07 00:00:00;9527";
+            return false;
         }
 
         String html = httpClient.getString();
@@ -84,33 +99,12 @@ private:
         if (statusCode != 200)
         {
             MiniIot_LOG_LN("[MQTT] 时间获取失败，HTTP代码: " + String(statusCode));
-            return "2022-07-07 00:00:00;9527";
+            return false;
         }
         
         String html = httpClient.responseBody();
 #endif
-
-
-        MiniIot_LOG(F("[MQTT] "));
-        MiniIot_LOG_LN(html);
-
-        DynamicJsonDocument JSON_Buffer(html.length() + 20);
-        if (deserializeJson(JSON_Buffer, html))
-        {
-            MiniIot_LOG_LN(F("[MQTT] 时间解析错误"));
-            return "2022-07-07 00:00:00;9527";
-        }
-
-        JsonObject jsonData = JSON_Buffer.as<JsonObject>();
-        if (!jsonData.containsKey("date_time") || !jsonData.containsKey("rand"))
-        {
-            MiniIot_LOG_LN(F("[MQTT] 时间解析错误，JSON缺少必要字段"));
-            return "2022-07-07 00:00:00;9527";
-        }
-
-        String str = jsonData["date_time"].as<String>() + ";" + jsonData["rand"].as<String>();
-        MiniIot_LOG_LN("[MQTT] 当前时间: " + str);
-        return str;
+        return parseDateTime(html, retData);
     }
 
     // 通过错误码获取错误描述
@@ -167,19 +161,16 @@ public:
     }
 
     // 初始化
-    void begin(String ProductId_, String DeviceId_, String Secret_, String SecretType_)
+    void begin(MiniIotSystemInfo_t *SystemInfo_)
     {
-        this->ProductId = ProductId_;
-        this->DeviceId = DeviceId_;
-        this->Secret = Secret_;
-        this->SecretType = SecretType_; // 1:产品秘钥，2:设备秘钥
+        this->SystemInfo = SystemInfo_;
     }
 
     // 订阅主题
     void mqttSubscribe()
     {
         // 服务调用
-        String topic = "sys/" + this->ProductId + "/" + this->DeviceId + "/service";
+        String topic = "sys/" + this->SystemInfo->ProductId + "/" + this->SystemInfo->DeviceId + "/service";
         if (MqttClient.subscribe(topic.c_str()))
         {
             MiniIot_LOG_LN("[MQTT] 主题订阅成功【" + topic + "】");
@@ -199,23 +190,28 @@ public:
             MiniIot_LOG(F("[MQTT] HOST:"));
             MiniIot_LOG_LN(F(MiniIot_MQTT_HOST));
         #else
-            const String mqttHost = this->ProductId + "." + MiniIot_MQTT_HOST; // MQTT服务器地址是域名，拼接产品ID
+            const String mqttHost = this->SystemInfo->ProductId + "." + MiniIot_MQTT_HOST; // MQTT服务器地址是域名，拼接产品ID
             MiniIot_LOG(F("[MQTT] HOST:"));
             MiniIot_LOG_LN(mqttHost);
         #endif
 
-        const String mqttClientId = this->ProductId + "_" + this->DeviceId; // MQTT客户端ID
+        const String mqttClientId = this->SystemInfo->ProductId + "_" + this->SystemInfo->DeviceId; // MQTT客户端ID
         MqttClient.setBufferSize(512);                                     // 设置MQTT缓冲区大小
         MqttClient.setKeepAlive(MiniIot_MQTT_KeepAlive);                                      // 设置MQTT心跳间隔
         
         MqttClient.setServer(mqttHost.c_str(), MiniIot_MQTT_PORT);
         MqttClient.setCallback(MiniIotMessage::handleMessage);
 
-        this->MqttUser = this->ProductId + ";" + this->DeviceId + ";" + mac + ";" + this->SecretType + ";1;" + this->getNowDateTime() + ";" + this->BinInfo;
-        this->MqttPassword = MiniIotUtils::ESPsha1(this->MqttUser + ";天才小坑Bi-<admin@dgwht.com>;" + this->Secret);
+        String datetime;
+        if (!this->getNowDateTime(&datetime))
+        {
+            return false;
+        }
+        String MqttUser = this->SystemInfo->ProductId + ";" + this->SystemInfo->DeviceId + ";" + mac + ";" + this->SystemInfo->SecretType + ";1;" + datetime + ";" + this->SystemInfo->BinInfo;
+        String MqttPassword = MiniIotUtils::ESPsha1(MqttUser + ";天才小坑Bi-<admin@dgwht.com>;" + this->SystemInfo->Secret);
 
         MiniIot_LOG_LN(F("[MQTT] MQTT连接中..."));
-        if (MqttClient.connect(mqttClientId.c_str(), this->MqttUser.c_str(), this->MqttPassword.c_str()))
+        if (MqttClient.connect(mqttClientId.c_str(), MqttUser.c_str(), MqttPassword.c_str()))
         {
             MiniIot_LOG_LN(F("[MQTT] MQTT连接成功"));
             this->mqttSubscribe();// 订阅主题
@@ -254,7 +250,7 @@ public:
         MiniIot_LOG_LN(F("[MQTT] 属性上报："));
         MiniIot_LOG_LN(postData);
 
-        String topic = "sys/" + this->ProductId + "/" + this->DeviceId + "/property";
+        String topic = "sys/" + this->SystemInfo->ProductId + "/" + this->SystemInfo->DeviceId + "/property";
         if (MqttClient.publish(topic.c_str(), postData.c_str()))
         {
             MiniIot_LOG_LN(F("[MQTT] 属性上报成功"));
@@ -271,7 +267,7 @@ public:
         MiniIot_LOG_LN(F("[MQTT] 事件上报："));
         MiniIot_LOG_LN(cmdData);
 
-        String topic = "sys/" + this->ProductId + "/" + this->DeviceId + "/event";
+        String topic = "sys/" + this->SystemInfo->ProductId + "/" + this->SystemInfo->DeviceId + "/event";
         if (MqttClient.publish(topic.c_str(), cmdData.c_str()))
         {
             MiniIot_LOG_LN(F("[MQTT] 事件上报成功"));

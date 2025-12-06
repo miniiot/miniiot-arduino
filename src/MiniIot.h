@@ -3,7 +3,7 @@
 #include <ArduinoJson.h>
 
 #ifndef STM32F1
-#include <LittleFS.h>
+    #include <LittleFS.h>
 #endif
 
 #include <sstream>
@@ -13,34 +13,34 @@
 #include "Core/MiniIotUtils.h"
 
 #ifdef STM32F1
-#include "stm32f1xx_hal.h"
+    #include "stm32f1xx_hal.h"
 #endif
 
 // wifi设备
 #ifdef __UseWifiClient__
-#ifdef ESP8266
-#include <ESP8266WiFi.h>
-#endif
+    #ifdef ESP8266
+        #include <ESP8266WiFi.h>
+    #endif
 
-#ifdef ESP32
-#include <WiFi.h>
-#endif
+    #ifdef ESP32
+        #include <WiFi.h>
+    #endif
 
-#include "Core/MiniIotWifi.h"
-MiniIotWifi MiniIotWifiObj;
+    #include "Core/MiniIotWifi.h"
+    MiniIotWifi MiniIotWifiObj;
 
-WiFiClient MiniIotNetworkClient;
+    WiFiClient MiniIotNetworkClient;
 
-#include "Core/MiniIotOTA.h"
+    #include "Core/MiniIotOTA.h"
 #endif
 
 // 网口设备
 #ifdef __UseEthernetClient__
-#include "Core/MiniIotEthernet.h"
-MiniIotEthernet MiniIotEthernetObj;
+    #include "Core/MiniIotEthernet.h"
+    MiniIotEthernet MiniIotEthernetObj;
 
-#include <EthernetClient.h>
-EthernetClient MiniIotNetworkClient;
+    #include <EthernetClient.h>
+    EthernetClient MiniIotNetworkClient;
 #endif
 
 // 消息处理
@@ -48,17 +48,17 @@ EthernetClient MiniIotNetworkClient;
 
 // 使用mqtt客户端
 #ifdef __UseMqttClient__
-#include "MiniIotMQTT.h"
-MiniIotMQTT MiniIotClient(MiniIotNetworkClient);
+    #include "MiniIotMQTT.h"
+    MiniIotMQTT MiniIotClient(MiniIotNetworkClient);
 #endif
 
 // 使用管理后台
 #ifdef __UseAdminService__
-#ifndef STM32F1
-#include "Core/MiniIotAP.h"
-#endif
-#include "Core/MiniIotAdminWebServer.h"
-MiniIotAdminWebServer MiniIotAdminWebServerClient;
+    #ifndef STM32F1
+        #include "Core/MiniIotAP.h"
+    #endif
+    #include "Core/MiniIotAdminWebServer.h"
+    MiniIotAdminWebServer MiniIotAdminWebServerClient;
 #endif
 
 // 核心类
@@ -74,8 +74,7 @@ private:
     int ledUpdateTime = -1; // led闪烁间隔
     uint32_t ledLastUpdateTime = 0;
 
-    String ProductId;
-    String DeviceId;
+    MiniIotSystemInfo_t SystemInfo;
 
     // 指示灯更新
     void updateLed(){
@@ -124,7 +123,7 @@ private:
     {
 #ifdef __UseAdminService__
 #ifndef STM32F1
-        MiniIotAP MiniIotAP(this->DeviceId);
+        MiniIotAP MiniIotAP(this->SystemInfo.DeviceId);
 #endif
         MiniIotAdminWebServerClient.init(MiniIotMessage::SysCallBack);
 #endif
@@ -132,8 +131,9 @@ private:
 
     void init()
     {
+        this->SystemInfo.BinInfo = "{\"MiniIot_Version\":\"" + (String)MiniIot_VERSION + "\",\"App_Version\":\"" + (String)APP_VERSION + "\"}";
+        
         // 指示灯初始化（低电平亮）
-
 #ifdef MiniIot_STATE_LED
         pinMode(MiniIot_STATE_LED, OUTPUT);
         digitalWrite(MiniIot_STATE_LED, 1);
@@ -202,27 +202,39 @@ private:
         }
     }
 
-public:
-    // 初始化(设备秘钥认证,2)
-    void begin(String ProductId_, String DeviceId_, String Secret_)
+    // 打印系统信息
+    void printSystemInfo()
     {
         MiniIot_LOG_LN();
         MiniIot_LOG_LN();
 
 #ifndef STM32F1
-        MiniIot_LOG(F("开发板型号: "));
+        MiniIot_LOG(F("[MiniIot] 开发板型号: "));
         MiniIot_LOG_LN(ARDUINO_BOARD);
 #endif
 
+#ifdef MiniIot_RTOS
+        MiniIot_LOG_LN(F("[MiniIot] RTOS环境: 是"));
+#else
+        MiniIot_LOG_LN(F("[MiniIot] RTOS环境: 否"));
+#endif
         MiniIot_LOG_LN("[MiniIot] 库版本：" + (String)MiniIot_VERSION);
         MiniIot_LOG_LN("[MiniIot] 程序版本：" + (String)APP_VERSION);
-        MiniIot_LOG_LN("[MiniIot] 产品ID：" + ProductId_);
-        MiniIot_LOG_LN("[MiniIot] 设备ID：" + DeviceId_);
+        MiniIot_LOG_LN("[MiniIot] 产品ID：" + this->SystemInfo.ProductId);
+        MiniIot_LOG_LN("[MiniIot] 设备ID：" + this->SystemInfo.DeviceId);
+    }
 
-        this->ProductId = ProductId_;
-        this->DeviceId = DeviceId_;
-
-        MiniIotClient.begin(ProductId_, DeviceId_, Secret_, "2");
+public:
+    // 初始化(设备秘钥认证,2)
+    void begin(String ProductId_, String DeviceId_, String Secret_)
+    {
+        this->SystemInfo.ProductId = ProductId_;
+        this->SystemInfo.DeviceId = DeviceId_;
+        this->SystemInfo.Secret = Secret_;
+        this->SystemInfo.SecretType = "2";
+        
+        this->printSystemInfo();
+        MiniIotClient.begin(&this->SystemInfo);
         this->init();
     }
 
@@ -232,23 +244,13 @@ public:
         // 获取芯片唯一ID
         String DeviceId_ = "A" + MiniIotUtils::ESPsha1(MiniIotUtils::ESPchipId()).substring(0, 9);
 
-        MiniIot_LOG_LN();
-        MiniIot_LOG_LN();
-
-#ifndef STM32F1
-        MiniIot_LOG(F("开发板型号: "));
-        MiniIot_LOG_LN(ARDUINO_BOARD);
-#endif
-
-        MiniIot_LOG_LN("[MiniIot] 库版本：" + (String)MiniIot_VERSION);
-        MiniIot_LOG_LN("[MiniIot] 程序版本：" + (String)APP_VERSION);
-        MiniIot_LOG_LN("[MiniIot] 产品ID：" + ProductId_);
-        MiniIot_LOG_LN("[MiniIot] 设备ID：" + DeviceId_);
-
-        this->ProductId = ProductId_;
-        this->DeviceId = DeviceId_;
-
-        MiniIotClient.begin(ProductId_, DeviceId_, Secret_, "1");
+        this->SystemInfo.ProductId = ProductId_;
+        this->SystemInfo.DeviceId = DeviceId_;
+        this->SystemInfo.Secret = Secret_;
+        this->SystemInfo.SecretType = "1";
+        
+        this->printSystemInfo();
+        MiniIotClient.begin(&this->SystemInfo);
         this->init();
     }
 
@@ -323,8 +325,8 @@ public:
         postData << "\"method\" : \"property.post\", ";
 
         postData << "\"sys\" : { \"ack\" : 0, ";
-        postData << "\"product\" : \"" << this->ProductId.c_str() << "\", ";
-        postData << "\"device\" : \"" << this->DeviceId.c_str() << "\"";
+        postData << "\"product\" : \"" << this->SystemInfo.ProductId.c_str() << "\", ";
+        postData << "\"device\" : \"" << this->SystemInfo.DeviceId.c_str() << "\"";
         postData << " }, ";
 
         postData << "\"params\" : {";
@@ -346,8 +348,8 @@ public:
         postData << "\"method\" : \"property.post\", ";
 
         postData << "\"sys\" : { \"ack\" : 0, ";
-        postData << "\"product\" : \"" << this->ProductId.c_str() << "\", ";
-        postData << "\"device\" : \"" << this->DeviceId.c_str() << "\"";
+        postData << "\"product\" : \"" << this->SystemInfo.ProductId.c_str() << "\", ";
+        postData << "\"device\" : \"" << this->SystemInfo.DeviceId.c_str() << "\"";
         postData << " }, ";
 
         postData << "\"params\" : {";
@@ -380,8 +382,8 @@ public:
         // postData << "\"method\" : \"event.post\", ";
 
         // postData << "\"sys\" : { \"ack\" : 0, ";
-        // postData << "\"product\" : \"" << this->ProductId.c_str() << "\", ";
-        // postData << "\"device\" : \"" << this->DeviceId.c_str() << "\"";
+        // postData << "\"product\" : \"" << this->SystemInfo.ProductId.c_str() << "\", ";
+        // postData << "\"device\" : \"" << this->SystemInfo.DeviceId.c_str() << "\"";
         // postData << " }, ";
 
         // postData << "\"params\" : {";

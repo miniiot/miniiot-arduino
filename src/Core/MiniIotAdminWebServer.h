@@ -45,6 +45,7 @@ private:
         MiniIot_LOG_LN(F("[AdminWebServer] Syscmd"));
         if (!MiniIotAdminWebServer::basicAuth())
         {
+            MiniIot_LOG_LN(F("[AdminWebServer] 非法请求"));
             return;
         }
 

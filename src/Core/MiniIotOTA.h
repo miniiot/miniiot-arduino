@@ -13,28 +13,6 @@
 
 class MiniIotOTA
 {
-    public:
-        // 固件升级
-        static void updateBin(String upUrl)
-        {
-            WiFiClient UpdateClient;
-            #ifdef ESP8266
-                ESPhttpUpdate.onStart(MiniIotOTA::update_started);     //当升级开始时
-                ESPhttpUpdate.onEnd(MiniIotOTA::update_finished);      //当升级结束时
-                ESPhttpUpdate.onProgress(MiniIotOTA::update_progress); //当升级中
-                ESPhttpUpdate.onError(MiniIotOTA::update_error);       //当升级失败时
-                ESPhttpUpdate.update(UpdateClient, upUrl);
-            #endif
-
-            #ifdef ESP32
-                httpUpdate.onStart(MiniIotOTA::update_started);     //当升级开始时
-                httpUpdate.onEnd(MiniIotOTA::update_finished);      //当升级结束时
-                httpUpdate.onProgress(MiniIotOTA::update_progress); //当升级中
-                httpUpdate.onError(MiniIotOTA::update_error);       //当升级失败时
-                httpUpdate.update(UpdateClient, upUrl);
-            #endif
-        }
-
     private:
         String url;
 
@@ -65,4 +43,26 @@ class MiniIotOTA
             Serial.println();
             Serial.printf("[固件升级]升级失败：%d\n", err);
         }
+    public:
+        // 固件升级
+        static void updateBin(String upUrl)
+        {
+            WiFiClient UpdateClient;
+            #ifdef ESP8266
+                ESPhttpUpdate.onStart(MiniIotOTA::update_started);     //当升级开始时
+                ESPhttpUpdate.onEnd(MiniIotOTA::update_finished);      //当升级结束时
+                ESPhttpUpdate.onProgress(MiniIotOTA::update_progress); //当升级中
+                ESPhttpUpdate.onError(MiniIotOTA::update_error);       //当升级失败时
+                ESPhttpUpdate.update(UpdateClient, upUrl);
+            #endif
+
+            #ifdef ESP32
+                httpUpdate.onStart(MiniIotOTA::update_started);     //当升级开始时
+                httpUpdate.onEnd(MiniIotOTA::update_finished);      //当升级结束时
+                httpUpdate.onProgress(MiniIotOTA::update_progress); //当升级中
+                httpUpdate.onError(MiniIotOTA::update_error);       //当升级失败时
+                httpUpdate.update(UpdateClient, upUrl);
+            #endif
+        }
+
 };

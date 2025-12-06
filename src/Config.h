@@ -1,7 +1,7 @@
 #pragma once
 
 // MiniIot库文件版本
-#define MiniIot_VERSION "miniiot_v2.3.2_251108"
+#define MiniIot_VERSION "miniiot_v2.3.3_251206"
 
 #ifndef APP_VERSION
     #define APP_VERSION "0.0.1"
@@ -38,7 +38,17 @@
 
 =======v2.3.2_251108=======
 -   修复：调整依赖库。
+
+=======v2.3.3_251205=======
+-   优化：系统信息参数传递。
+-   新增：增加RTOS环境判断。
 */
+
+#if defined(FREERTOS_PORT) || defined(configUSE_PREEMPTION) || defined(FREERTOS)
+    #define MiniIot_RTOS true
+#elif defined(ARDUINO_ARCH_ESP32) || defined(ARDUINO_PORTENTA_H7_M7) || defined(ARDUINO_PORTENTA_H7_M4)
+    #define MiniIot_RTOS true
+#endif
 
 // MiniIot状态指示灯IO
 #ifndef MiniIot_STATE_LED
@@ -125,3 +135,13 @@
 
 // 一个JSON对象参数的回调函数
 typedef void (*JsonObjectCallbackFunction)(JsonObject dataObj);
+
+// 系统信息结构体
+struct MiniIotSystemInfo_t
+{
+    String ProductId;  // 产品ID
+    String DeviceId;   // 设备ID
+    String Secret;     // 秘钥
+    String SecretType; // 秘钥类型
+    String BinInfo;    // 固件信息
+};

@@ -1,13 +1,11 @@
 #pragma once
 #include <ArduinoJson.h>
-// #include <LittleFS.h>
 
 #include <SPI.h>
 #include <Ethernet.h>
 #include <EthernetClient.h>
 
 #include "MiniIotUtils.h"
-
 
 class MiniIotEthernet
 {
@@ -16,106 +14,7 @@ private:
     uint32_t init_time = 0;
     uint32_t connect_time = 0;
 
-    String configName = "/ethernetConfig.json";
-    // String jsonData = "{\"ssid\":\"miniiot.top\",\"passwd\":\"88888888\"}";
-
-    // wifi信息
-    // String WifiSsid;
-    // String WifiPasswd;
-
     String mac;
-
-    // 初始化 LittleFS
-//     bool initializeLittleFS()
-//     {
-// #ifdef ESP32
-//         if (!LittleFS.begin(true))
-// #else
-//         if (!LittleFS.begin())
-// #endif
-//         {
-//             MiniIot_LOG_LN(F("[WIFI] LittleFS 初始化失败"));
-//             return false;
-//         }
-
-//         return true;
-//     }
-
-    // 读取本地wifi信息
-    // bool loadConfig()
-    // {
-    //     if (!initializeLittleFS())
-    //     {
-    //         return false;
-    //     }
-
-    //     File config = LittleFS.open(this->configName, "r");
-    //     if (!config)
-    //     {
-    //         MiniIot_LOG(F("[WIFI] 无法打开配置文件："));
-    //         MiniIot_LOG_LN(this->configName);
-    //         MiniIot_LOG(F("[WIFI] 使用默认配置："));
-    //         MiniIot_LOG_LN(this->jsonData);
-    //     }
-    //     else
-    //     {
-    //         this->jsonData = config.readString();
-    //         config.close();
-    //         LittleFS.end();
-
-    //         MiniIot_LOG(F("[WIFI] 成功读取配置："));
-    //         MiniIot_LOG_LN(this->jsonData);
-    //     }
-
-    //     DynamicJsonDocument JSON_Buffer(this->jsonData.length() + 20);
-    //     if (deserializeJson(JSON_Buffer, this->jsonData) != DeserializationError::Ok)
-    //     {
-    //         MiniIot_LOG_LN(F("[WIFI] 配置解析JSON错误"));
-    //         return false;
-    //     }
-
-    //     this->WifiSsid = JSON_Buffer["ssid"].as<String>();
-    //     this->WifiPasswd = JSON_Buffer["passwd"].as<String>();
-
-    //     MiniIot_LOG(F("[WIFI] 成功解析配置："));
-    //     MiniIot_LOG_LN(this->jsonData);
-    //     return true;
-    // }
-
-    // 配置写入
-    // bool write()
-    // {
-    //     if (!initializeLittleFS())
-    //     {
-    //         return false;
-    //     }
-
-    //     File config = LittleFS.open(this->configName, "w");
-    //     if (!config)
-    //     {
-    //         MiniIot_LOG(F("[WIFI] 无法打开配置文件："));
-    //         MiniIot_LOG_LN(this->configName);
-    //         LittleFS.end();
-    //         return false;
-    //     }
-
-    //     String data = "{\"ssid\":\"" + this->WifiSsid + "\",\"passwd\":\"" + this->WifiPasswd + "\"}";
-    //     if (config.print(data) != data.length())
-    //     {
-    //         config.close();
-    //         LittleFS.end();
-    //         MiniIot_LOG(F("[WIFI] 配置写入失败："));
-    //         MiniIot_LOG_LN(this->configName);
-    //         return false;
-    //     }
-
-    //     MiniIot_LOG(F("[WIFI] 配置写入成功："));
-    //     MiniIot_LOG_LN(data);
-    //     config.close();
-    //     LittleFS.end();
-
-    //     return true;
-    // }
 
     bool status(){
         int code1 = Ethernet.hardwareStatus();
@@ -193,9 +92,17 @@ public:
 
     void restart(){
         digitalWrite(MiniIot_ETH_RST, LOW);
+    #ifdef MiniIot_RTOS
+        vTaskDelay(200 / portTICK_RATE_MS);
+    #else
         delay(200);
+    #endif
         digitalWrite(MiniIot_ETH_RST, HIGH);
+    #ifdef MiniIot_RTOS
+        vTaskDelay(200 / portTICK_RATE_MS);
+    #else
         delay(200);
+    #endif
     }
 
     // 连接网络
@@ -242,32 +149,4 @@ public:
         return Ethernet.hardwareStatus() == 3 && Ethernet.linkStatus() == 1 ? 1 : 0;
     }
 
-    // 清除配置信息
-    // void clear()
-    // {
-    //     if (!initializeLittleFS())
-    //     {
-    //         return;
-    //     }
-
-    //     if (LittleFS.remove(this->configName))
-    //     {
-    //         MiniIot_LOG(F("[Ethernet] 配置清除成功："));
-    //     }
-    //     else
-    //     {
-    //         MiniIot_LOG(F("[Ethernet] 配置清除失败："));
-    //     }
-    //     MiniIot_LOG_LN(this->configName);
-
-    //     LittleFS.end();
-    // }
-
-    // 更新配置
-    // void update(String wifiName, String wifiPassword)
-    // {
-    //     this->WifiSsid = wifiName;
-    //     this->WifiPasswd = wifiPassword;
-    //     this->write();
-    // }
 };
