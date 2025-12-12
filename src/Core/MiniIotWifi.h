@@ -134,7 +134,7 @@ public:
     }
 
     // 连接WIFI（LED常量）
-    bool wifiConnect()
+    bool connect()
     {
 
         if(this->connect_time == 0){
@@ -179,7 +179,7 @@ public:
     }
 
     // 获取MAC地址
-    String getWifiMac()
+    String getMac()
     {
         return WiFi.macAddress();
     }

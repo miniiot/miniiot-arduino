@@ -18,18 +18,8 @@ public:
     }
 
     // 收到服务器消息（回调）
-    static void handleMessage(char *topic, byte *payload, unsigned int length)
+    static void handleMessage(String topicStr, String msg)
     {
-        String topicStr = topic;
-
-        // 创建一个临时的char数组来存储payload内容
-        char *payloadStr = new char[length + 1];
-        memcpy(payloadStr, payload, length);
-        payloadStr[length] = '\0'; // 确保字符串以null结尾
-
-        String msg = payloadStr;
-        delete[] payloadStr; // 释放临时数组
-
         MiniIot_LOG_LN("[MQTT] 收到消息：\n主题: " + topicStr + "\n内容：" + msg);
 
         DynamicJsonDocument JSON_Buffer(msg.length() + 20);
@@ -69,6 +59,20 @@ public:
         }
     }
 
+    // 收到服务器消息（回调）
+    static void handleMqttMessage(char *topic, byte *payload, unsigned int length)
+    {
+        String topicStr = topic;
+
+        // 创建一个临时的char数组来存储payload内容
+        char *payloadStr = new char[length + 1];
+        memcpy(payloadStr, payload, length);
+        payloadStr[length] = '\0'; // 确保字符串以null结尾
+
+        String msg = payloadStr;
+        delete[] payloadStr; // 释放临时数组
+        MiniIotMessage::handleMessage(topicStr, msg);
+    }
 };
 
 JsonObjectCallbackFunction MiniIotMessage::AppCallBack = nullptr;

@@ -1,7 +1,7 @@
 #pragma once
 
 // MiniIot库文件版本
-#define MiniIot_VERSION "miniiot_v2.3.3_251206"
+#define MiniIot_VERSION "miniiot_v2.4.0_251212"
 
 #ifndef APP_VERSION
     #define APP_VERSION "0.0.1"
@@ -42,6 +42,10 @@
 =======v2.3.3_251205=======
 -   优化：系统信息参数传递。
 -   新增：增加RTOS环境判断。
+
+=======v2.4.0_251212=======
+-   修复：修复上报char*类型数据异常的问题。
+-   新增：增加多个函数用于适配外部连接（如AT 4G模块），详见AT示例程序。
 */
 
 #if defined(FREERTOS_PORT) || defined(configUSE_PREEMPTION) || defined(FREERTOS)
@@ -133,8 +137,11 @@
     #define MiniIot_LOG_LN(message)
 #endif
 
-// 一个JSON对象参数的回调函数
+// 1个JSON对象参数的回调函数
 typedef void (*JsonObjectCallbackFunction)(JsonObject dataObj);
+
+// 2个字符串参数的回调函数
+typedef void (*StringCallbackFunction)(String str1, String str2);
 
 // 系统信息结构体
 struct MiniIotSystemInfo_t
@@ -144,4 +151,5 @@ struct MiniIotSystemInfo_t
     String Secret;     // 秘钥
     String SecretType; // 秘钥类型
     String BinInfo;    // 固件信息
+    String Mac;        // MAC地址
 };

@@ -200,7 +200,7 @@ public:
         MqttClient.setKeepAlive(MiniIot_MQTT_KeepAlive);                                      // 设置MQTT心跳间隔
         
         MqttClient.setServer(mqttHost.c_str(), MiniIot_MQTT_PORT);
-        MqttClient.setCallback(MiniIotMessage::handleMessage);
+        MqttClient.setCallback(MiniIotMessage::handleMqttMessage);
 
         String datetime;
         if (!this->getNowDateTime(&datetime))
@@ -244,40 +244,21 @@ public:
         MqttClient.disconnect();
     }
 
-    // 属性上报
-    void propertyPost(String postData)
+    // 数据上报
+    void dataPush(String topic, String postData)
     {
-        MiniIot_LOG_LN(F("[MQTT] 属性上报："));
+        MiniIot_LOG_LN(F("[MQTT] 数据上报："));
         MiniIot_LOG_LN(postData);
 
-        String topic = "sys/" + this->SystemInfo->ProductId + "/" + this->SystemInfo->DeviceId + "/property";
         if (MqttClient.publish(topic.c_str(), postData.c_str()))
         {
-            MiniIot_LOG_LN(F("[MQTT] 属性上报成功"));
+            MiniIot_LOG_LN(F("[MQTT] 上报成功"));
         }
         else
         {
-            MiniIot_LOG_LN(F("[MQTT] 属性上报失败"));
+            MiniIot_LOG_LN(F("[MQTT] 上报失败"));
         }
     }
-
-    // 事件上报
-    void eventPost(String cmdData)
-    {
-        MiniIot_LOG_LN(F("[MQTT] 事件上报："));
-        MiniIot_LOG_LN(cmdData);
-
-        String topic = "sys/" + this->SystemInfo->ProductId + "/" + this->SystemInfo->DeviceId + "/event";
-        if (MqttClient.publish(topic.c_str(), cmdData.c_str()))
-        {
-            MiniIot_LOG_LN(F("[MQTT] 事件上报成功"));
-        }
-        else
-        {
-            MiniIot_LOG_LN(F("[MQTT] 事件上报失败"));
-        }
-    }
-
 
     void loop()
     {

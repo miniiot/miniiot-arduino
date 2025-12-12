@@ -75,7 +75,7 @@ private:
     uint32_t ledLastUpdateTime = 0;
 
     MiniIotSystemInfo_t SystemInfo;
-
+    StringCallbackFunction DataPushServiceCallBack = nullptr;
     // 指示灯更新
     void updateLed(){
 #ifdef MiniIot_STATE_LED
@@ -132,6 +132,7 @@ private:
     void init()
     {
         this->SystemInfo.BinInfo = "{\"MiniIot_Version\":\"" + (String)MiniIot_VERSION + "\",\"App_Version\":\"" + (String)APP_VERSION + "\"}";
+        this->SystemInfo.Mac = MiniIotUtils::getMacByChipId();
         
         // 指示灯初始化（低电平亮）
 #ifdef MiniIot_STATE_LED
@@ -254,10 +255,38 @@ public:
         this->init();
     }
 
+    // 获取系统信息
+    MiniIotSystemInfo_t *getSystemInfo()
+    {
+        return &this->SystemInfo;
+    }
+    
     // 绑定业务事件回调
     void attach(JsonObjectCallbackFunction AppCallBack_)
     {
         MiniIotMessage::attachAppCallback(AppCallBack_);
+    }
+
+    // 绑定数据上报回调
+    void attachDataPushService(StringCallbackFunction DataPushServiceCallBack_)
+    {
+        this->DataPushServiceCallBack = DataPushServiceCallBack_;
+    }
+    // 注销数据上报回调
+    void deregisterDataPushService()
+    {
+        this->DataPushServiceCallBack = nullptr;
+    }
+
+    // 数据下发入口
+    void dataPull(String topic, String data)
+    {
+        MiniIotMessage::handleMessage(topic, data);
+    }
+
+    // 断开MQTT连接
+    void disconnect(){
+        MiniIotClient.disconnect();
     }
 
     // 主进程
@@ -302,21 +331,28 @@ public:
     // 业务属性上报
     void propertyPost(String property_name, int property_value)
     {
-        this->propertyPost(property_name, (String)property_value);
+        this->propertyPost(property_name, String(property_value));
     }
 
     void propertyPost(String property_name, float property_value)
     {
-        this->propertyPost(property_name, (String)property_value);
+        this->propertyPost(property_name, String(property_value));
     }
 
     void propertyPost(String property_name, bool property_value)
     {
-        this->propertyPost(property_name, (String)property_value);
+        this->propertyPost(property_name, String(property_value));
     }
 
     void propertyPost(String property_name, String property_value)
     {
+        this->propertyPost(property_name, property_value.c_str());
+    }
+
+    void propertyPost(String property_name,const char *property_value)
+    {
+        String topic = "sys/" + this->SystemInfo.ProductId + "/" + this->SystemInfo.DeviceId + "/property";
+
         static std::stringstream postData;
         postData.str("");
         postData << "{";
@@ -330,16 +366,23 @@ public:
         postData << " }, ";
 
         postData << "\"params\" : {";
-        postData << "\"" << property_name.c_str() << "\" : {\"value\" : \"" << property_value.c_str() << "\"}";
+        postData << "\"" << property_name.c_str() << "\" : {\"value\" : \"" << property_value << "\"}";
         postData << "}";
         postData << "}";
 
-        MiniIotClient.propertyPost(postData.str().c_str());
+        // 数据由外部接管 
+        if(this->DataPushServiceCallBack != nullptr){
+            this->DataPushServiceCallBack(topic, postData.str().c_str());
+            return;
+        }
+        MiniIotClient.dataPush(topic, postData.str().c_str());
     }
 
     // 属性批量上报，所有的key+value之和不要超过40个字符
     void propertyPost(JSONVar dataObj)
     {
+        String topic = "sys/" + this->SystemInfo.ProductId + "/" + this->SystemInfo.DeviceId + "/property";
+
         static std::stringstream postData;
         postData.str("");
         postData << "{";
@@ -368,12 +411,19 @@ public:
         postData << "}";
         postData << "}";
 
-        MiniIotClient.propertyPost(postData.str().c_str());
+        // 数据由外部接管 
+        if(this->DataPushServiceCallBack != nullptr){
+            this->DataPushServiceCallBack(topic, postData.str().c_str());
+            return;
+        }
+        MiniIotClient.dataPush(topic, postData.str().c_str());
     }
 
     // 业务事件上报
     void eventPost(String event_name, JsonObject event_data)
     {
+        String topic = "sys/" + this->SystemInfo.ProductId + "/" + this->SystemInfo.DeviceId + "/event";
+
         // static std::stringstream postData;
         // postData.str("");
         // postData << "{";
@@ -391,7 +441,12 @@ public:
         // postData << "}";
         // postData << "}";
 
-        // MiniIotClient.eventPost(postData.str().c_str());
+        // 数据由外部接管 
+        // if(this->DataPushServiceCallBack != nullptr){
+        //     this->DataPushServiceCallBack(topic, postData.str().c_str());
+        //     return;
+        // }
+        // MiniIotClient.dataPush(topic, postData.str().c_str());
     }
 };
 
@@ -404,6 +459,11 @@ void MiniIot::loop()
     MiniIotAdminWebServerClient.loop();
 #endif
 
+    // 数据由外部接管 
+    if(this->DataPushServiceCallBack != nullptr){
+        return;
+    }
+
     switch (this->workstate)
     {
     case MINIIOT_WORK_STATE_INIT:                                // 初始化
@@ -413,7 +473,7 @@ void MiniIot::loop()
     case MINIIOT_WORK_STATE_NETWORK_CONNECTING: // 网络连接
         this->ledUpdateTime = 1000; // LED闪烁间隔
 #ifdef __UseWifiClient__
-        if (MiniIotWifiObj.wifiConnect() == true)
+        if (MiniIotWifiObj.connect() == true)
 #endif
 #ifdef __UseEthernetClient__
             if (MiniIotEthernetObj.connect() == true)
@@ -433,7 +493,7 @@ void MiniIot::loop()
     case MINIIOT_WORK_STATE_SERVER_CONNECTING: // 服务器连接
         this->ledUpdateTime = 500; // LED闪烁间隔
 #ifdef __UseWifiClient__
-        if (MiniIotClient.mqttConnect(MiniIotWifiObj.getWifiMac()) == true)
+        if (MiniIotClient.mqttConnect(MiniIotWifiObj.getMac()) == true)
 #endif
 
 #ifdef __UseEthernetClient__
